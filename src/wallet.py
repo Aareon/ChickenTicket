@@ -35,7 +35,7 @@ def generate_ECDSA_keys():
     logging.info('Generating keys: curve=ecdsa.SECP256k1')
     sk = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1) # signing key
     priv_key = sk.to_string().hex() # private key
-    logging.info('Private key generated, here\'s a snippet; \'{}\''.format(priv_key[:8]))
+    logging.info('Private key generated')
     
     # Generate public key
     vk = sk.get_verifying_key() # verifying key
