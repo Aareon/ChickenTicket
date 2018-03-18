@@ -22,10 +22,25 @@ class Ledger(Base):
     block_hash = Column(String, nullable=False, unique=True)
     fee = Column(Integer, nullable=False)
     reward = Column(Integer, nullable=False)
+    openfield = Column(String, nullable=True)
 
     def __repr__(self):
-        return '<Transaction(id=\'{}\', height=\'{}\', timestamp=\'{}\', address=\'{}\', recipient=\'{}\', amount=\'{}\', signature=\'{}\', public_key=\'{}\', block_hash=\'{}\', fee=\'{}\', reward=\'{}\')>'.format(
+        return '<Transaction(id=\'{}\', height=\'{}\', timestamp=\'{}\', address=\'{}\', recipient=\'{}\', amount=\'{}\', signature=\'{}\', public_key=\'{}\', block_hash=\'{}\', fee=\'{}\', reward=\'{}\', openfield=\'{}\')>'.format(
             self.id, self.height, self.timestamp, self.address,
             self.recipient, self.amount, self.signature, self.public_key,
-            self.block_hash, self.fee, self.reward
+            self.block_hash, self.fee, self.reward, self.openfield
         )
+
+def load_ledger():
+    logging.info('Creating ledger database engine...')
+    try:
+        engine = create_engine('sqlite:///ledger.db?check_same_thread=False', echo=False)
+        logging.info('Loaded `ledger.db`')
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        Base.metadata.create_all(engine)
+        return session
+    except:
+        logging.warning('Failed to load `ledger.db`, exiting...')
+        return None
+
