@@ -43,4 +43,3 @@ def load_ledger():
     except:
         logging.warning('Failed to load `ledger.db`, exiting...')
         return None
-

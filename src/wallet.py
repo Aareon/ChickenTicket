@@ -53,7 +53,7 @@ def generate_address(pub_key):
     return address
 
 
-def load_wallet():
+def load_wallet(password=''):
     logging.info('Creating wallet database engine...')
     try:
         engine = create_engine('sqlite:///wallet.db?check_same_thread=False', echo=False)
@@ -90,8 +90,8 @@ if __name__ == "__main__":
         # save our public/private keys and address to `wallet.db`
         try:
             wallet.add(Wallet(address=address,
-                            public_key=public_key,
-                            private_key=private_key))
+                              public_key=public_key,
+                              private_key=private_key))
             wallet.commit()
             logging.info('Successfully stored new public/private keys and address in `wallet.db`')
         except:
