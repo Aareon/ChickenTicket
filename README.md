@@ -33,11 +33,19 @@ $ py -3 -m pip install -r requirements.txt
 
 ### Development
 Want to contribute? We ❤️ pull requests!
+Please test code extensively before creating a pull request.
+Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
 
 ### Todos
  - MOAR TESTS
- - Probably need to generate the genesis block, just saying.
- - Release to the public
+ - ~~Probably need to generate the genesis block, just saying.~~ Done!
+ - ~~Release to the public~~ Done!
+ - Peers and Nodes (including websocket handling, etc. Should be fun!)
+ - Sending and receiving transactions
+ - Mining (see: [Allium](https://github.com/JayDDee/cpuminer-opt/blob/master/algo/lyra2/allium.c)
+ - Clean up!
+ - Graphical Wallet
+
 
 License
 ----
