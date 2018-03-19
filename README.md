@@ -40,9 +40,9 @@ Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
  - MOAR TESTS
  - ~~Probably need to generate the genesis block, just saying.~~ Done!
  - ~~Release to the public~~ Done!
- - Peers and Nodes (including websocket handling, etc. Should be fun!)
+ - Peers and Nodes (including websocket handling, etc. Should be fun 😅)
  - Sending and receiving transactions
- - Mining (see: [Allium](https://github.com/JayDDee/cpuminer-opt/blob/master/algo/lyra2/allium.c)
+ - Mining (see: [Allium](https://github.com/JayDDee/cpuminer-opt/blob/master/algo/lyra2/allium.c))
  - Clean up!
  - Graphical Wallet
 
