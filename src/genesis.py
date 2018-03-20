@@ -60,9 +60,10 @@ if __name__ == '__main__':
 
     # get the most recently geneated address and private key from the wallet
     address, public_key, private_key = wallet.query(Wallet.address, Wallet.public_key, Wallet.private_key).first()
-
+    
     transaction, signature, block_hash = create_genesis_transaction(address, private_key)
 
+    # this contains an example of safely performing math that will return a decimal
     print('Sending genesis reward of {} CHKN to address: {}'.format(Decimal(transaction['amount'])/100000000, transaction['recipient']))
 
     # store the genesis block in the ledger!
