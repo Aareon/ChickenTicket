@@ -36,6 +36,10 @@ Want to contribute? We ❤️ pull requests!
 Please test code extensively before creating a pull request.
 Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
 
+### Contact
+Project discussion is located on the [Chicken Ticket Discord](https://discord.gg/rcZDKeu)
+Feel free to join for support and development questions.
+
 ### Todos
  - MOAR TESTS
  - ~~Probably need to generate the genesis block, just saying.~~ Done!
