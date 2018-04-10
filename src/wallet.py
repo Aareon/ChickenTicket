@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import sys
+import argparse
 
 import ecdsa
 from Cryptodome.PublicKey import RSA
@@ -13,6 +14,9 @@ from sqlalchemy.orm import sessionmaker
 logging.basicConfig(level=logging.INFO, filename="wallet.log", format='%(asctime)s %(message)s') # include timestamp
 
 Base = declarative_base()
+
+parser = argparse.ArgumentParser(description='Cryptocurrency in Python')
+parser.add_argument('-k', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
 
 class Wallet(Base):
     """Represents a wallet"""
@@ -97,3 +101,10 @@ if __name__ == "__main__":
         except:
             logging.warning('Failed to store "new" public/private keys and address in `wallet.db`')
             sys.exit(1)
+    else:
+        wallet = load_wallet()
+        options = parser.parse_args()
+        print('Public Key:', Wallet.public_key)
+        if options.k:
+                     print('Private Key:', Wallet.private_key)
+        print('Address:', Wallet.address)
