@@ -14,10 +14,10 @@ allium_module = Extension("allium", [
     ], include_dirs=["src/allium/include"])
 
 setup(
-    name="ChickenTicket",
+    name="Chicken Ticket",
     version="0.5",
-    description="Cryptocurrency implementation in Python",
+    description="Pure Python implementation of a cryptocurrency blockchain ",
     author="Aareon Sullivan",
-    author_email="idk lol",
-    url="idk",
+    author_email="aareon@died-in.space",
+    url="",
     ext_modules=[allium_module])
