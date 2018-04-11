@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import sys
+import argparse
 from decimal import Decimal, getcontext
 
 getcontext().prec = 8
@@ -102,6 +103,13 @@ def get_balance(wallet, ledger):
     return balance, ledger_state
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Cryptocurrency in Python')
+    parser.add_argument('-key', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
+    parser.add_argument('--k', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
+    parser.add_argument('-newaddress', help="Generates a new address, public key, and private key", action='store_true')
+    parser.add_argument('--N', help="Generates a new address, public key, and private key", action='store_true')
+    args = parser.parse_args()
+
     print("ChickenTicket CLI")
     print("Find help at https://github.com/Aareon/chickenticket\n")
 
@@ -109,7 +117,7 @@ if __name__ == "__main__":
     wallet = load_wallet()
 
     addresses = wallet.query(Wallet.address).all()
-    if len(addresses) == 0:
+    if len(addresses) == 0 or args.newaddress or args.N:
         logging.info('Getting new public/private keys and address')
         # get public and private keys
         public_key, private_key = generate_ECDSA_keys()
@@ -132,7 +140,8 @@ if __name__ == "__main__":
         public_key, private_key, address = wallet.query(Wallet.public_key, Wallet.private_key, Wallet.address).all()[0]
     
     print('Public Key:', public_key)
-    print('Private Key:', private_key)
+    if args.key or args.k:
+        print('Private Key:', Wallet.private_key)
     print('Address:', address, '\n')
 
     ledger = load_ledger()
