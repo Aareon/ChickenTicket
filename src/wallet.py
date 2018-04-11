@@ -90,12 +90,17 @@ def get_balance(wallet, ledger):
     addresses = wallet.query(Wallet.address).all()
 
     balance = 000000000
-    for address in addresses:
-        transactions = ledger.query(Ledger.amount).filter_by(recipient=address[0]).all()
-        for amount in transactions:
-            balance += amount[0]
+    ledger_state = True
+    try:
+        for address in addresses:
+            transactions = ledger.query(Ledger.amount).filter_by(recipient=address[0]).all()
+            for amount in transactions:
+                balance += amount[0]
+    except:
+        ledger_state = False
+        pass
 
-    return balance
+    return balance, ledger_state
 
 if __name__ == "__main__":
     print("ChickenTicket CLI")
@@ -132,4 +137,7 @@ if __name__ == "__main__":
     print('Address:', address, '\n')
 
     ledger = load_ledger()
-    print('Balance:', Decimal(get_balance(wallet, ledger)/100000000), 'CHKN')
+    balance, ledger_state = get_balance(wallet, ledger)
+    print('Balance:', Decimal(balance/100000000), 'CHKN')
+    if not ledger_state:
+        print('Ledger not present/synced')
