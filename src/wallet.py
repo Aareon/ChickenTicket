@@ -8,7 +8,6 @@ from decimal import Decimal, getcontext
 getcontext().prec = 8
 
 import ecdsa
-from Cryptodome.PublicKey import RSA
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
