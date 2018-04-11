@@ -3,12 +3,17 @@ import hashlib
 import logging
 import os
 import sys
+import argparse
+from decimal import Decimal, getcontext
+
+getcontext().prec = 8
 
 import ecdsa
-from Cryptodome.PublicKey import RSA
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+from ledger import Ledger
 
 logging.basicConfig(level=logging.INFO, filename="wallet.log", format='%(asctime)s %(message)s') # include timestamp
 
@@ -41,7 +46,7 @@ def generate_ECDSA_keys():
     vk = sk.get_verifying_key() # verifying key
     pk = vk.to_string().hex() # unencoded public key
     pub_key = base64.b64encode(bytes.fromhex(pk)) # encode `pk` to make it shorter
-    logging.info('Public key generated, here it is; {}'.format(pub_key))
+    logging.info('Public key generated, here it is; %s', pub_key)
     
     return pub_key, priv_key
 
@@ -49,7 +54,7 @@ def generate_ECDSA_keys():
 def generate_address(pub_key):
     """Generate an address from a bytes-like public key"""
     address = hashlib.sha256(pub_key).hexdigest()
-    logging.info('Generated address. Here it is; {}'.format(address))
+    logging.info('Generated address. Here it is; %s' % address)
     return address
 
 
@@ -65,9 +70,48 @@ def load_wallet(password=''):
     except:
         logging.warning('Failed to load `wallet.db`, exiting...')
         sys.exit(1)
-    
+
+
+def load_ledger():
+    logging.info('Creating ledger database engine...')
+    try:
+        engine = create_engine('sqlite:///ledger.db?check_same_thread=False', echo=False)
+        logging.info('Loaded `ledger.db`')
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        Base.metadata.create_all(engine)
+        return session
+    except:
+        logging.warning('Failed to load `ledger.db`, exiting...')
+        sys.exit(1)
+
+
+def get_balance(wallet, ledger):
+    addresses = wallet.query(Wallet.address).all()
+
+    balance = 0
+    ledger_state = True
+    try:
+        for address in addresses:
+            transactions = ledger.query(Ledger.amount).filter_by(recipient=address[0]).all()
+            for amount in transactions:
+                balance += amount[0]
+    except:
+        ledger_state = False
+        pass
+
+    return balance, ledger_state
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Pure Python implementation of a cryptocurrency blockchain')
+    parser.add_argument('-key', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
+    parser.add_argument('--K', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
+    parser.add_argument('-newaddress', help="Generates a new address, public key, and private key", action='store_true')
+    parser.add_argument('--N', help="Generates a new address, public key, and private key", action='store_true')
+    parser.add_argument('--A', help='Adds a node to peers list for this instance', action='store_true')
+    parser.add_argument('--addnode', help='Adds a node to peers list for this instance', action='store_true')
+    args = parser.parse_args()
+
     print("ChickenTicket CLI")
     print("Find help at https://github.com/Aareon/chickenticket\n")
 
@@ -75,17 +119,13 @@ if __name__ == "__main__":
     wallet = load_wallet()
 
     addresses = wallet.query(Wallet.address).all()
-    if len(addresses) == 0:
+    if len(addresses) == 0 or args.newaddress or args.N:
         logging.info('Getting new public/private keys and address')
-        # get public and private keys
+        # generate public and private keys
         public_key, private_key = generate_ECDSA_keys()
 
         # generate an address from our public key
         address = generate_address(public_key)
-
-        print('Public Key:', public_key)
-        print('Private Key:', private_key)
-        print('Address:', address, '\n')
 
         # save our public/private keys and address to `wallet.db`
         try:
@@ -95,5 +135,22 @@ if __name__ == "__main__":
             wallet.commit()
             logging.info('Successfully stored new public/private keys and address in `wallet.db`')
         except:
-            logging.warning('Failed to store "new" public/private keys and address in `wallet.db`')
+            logging.warning('Failed to store new public/private keys and address in `wallet.db`')
             sys.exit(1)
+    # if wallet already has an address
+    else:
+        # get the already existing key pair from the wallet, but only the most recently made
+        public_key, private_key, address = wallet.query(Wallet.public_key, Wallet.private_key, Wallet.address).all()[0]
+    
+    print('Public Key:', public_key)
+    # if user requests to see private key
+    if args.key or args.K:
+        print('Private Key:', Wallet.private_key)
+
+    print('Address:', address, '\n')
+
+    ledger = load_ledger()
+    balance, ledger_state = get_balance(wallet, ledger)
+    print('Balance:', Decimal(balance/100000000), 'CHKN')
+    if not ledger_state:
+        print('Ledger not present/synced')
