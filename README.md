@@ -13,6 +13,7 @@ Chicken Ticket uses a number of technologies:
 
 ### Installing from source
 Chicken Ticket requires [Python](https://python.org/) 3.5+ to run.
+Chicken Ticket requires [Visual Studio Build Tools](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017) to install the Allium algorithm.
 
 Clone this repository after installing [Git](https://git-scm.com):
 ```sh

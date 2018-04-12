@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import sys
+import argparse
 from decimal import Decimal, getcontext
 
 getcontext().prec = 8
@@ -40,13 +41,13 @@ def generate_ECDSA_keys():
     sk = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1) # signing key
     priv_key = sk.to_string().hex() # private key
     logging.info('Private key generated')
-    
+
     # Generate public key
     vk = sk.get_verifying_key() # verifying key
     pk = vk.to_string().hex() # unencoded public key
     pub_key = base64.b64encode(bytes.fromhex(pk)) # encode `pk` to make it shorter
     logging.info('Public key generated, here it is; %s', pub_key)
-    
+
     return pub_key, priv_key
 
 
@@ -88,7 +89,7 @@ def load_ledger():
 def get_balance(wallet, ledger):
     addresses = wallet.query(Wallet.address).all()
 
-    balance = 000000000
+    balance = 0
     ledger_state = True
     try:
         for address in addresses:
@@ -102,6 +103,12 @@ def get_balance(wallet, ledger):
     return balance, ledger_state
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Pure Python implementation of a cryptocurrency blockchain')
+    parser.add_argument('-key', '-K', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
+    parser.add_argument('-newaddress', '-N', help="Generates a new address, public key, and private key", action='store_true')
+    parser.add_argument('--addnode', '-A', help='Adds a node to peers list for this instance', action='store_true')
+    args = parser.parse_args()
+
     print("ChickenTicket CLI")
     print("Find help at https://github.com/Aareon/chickenticket\n")
 
@@ -109,9 +116,9 @@ if __name__ == "__main__":
     wallet = load_wallet()
 
     addresses = wallet.query(Wallet.address).all()
-    if len(addresses) == 0:
+    if len(addresses) == 0 or args.newaddress:
         logging.info('Getting new public/private keys and address')
-        # get public and private keys
+        # generate public and private keys
         public_key, private_key = generate_ECDSA_keys()
 
         # generate an address from our public key
@@ -129,10 +136,14 @@ if __name__ == "__main__":
             sys.exit(1)
     # if wallet already has an address
     else:
+        # get the already existing key pair from the wallet, but only the most recently made
         public_key, private_key, address = wallet.query(Wallet.public_key, Wallet.private_key, Wallet.address).all()[0]
-    
+
     print('Public Key:', public_key)
-    print('Private Key:', private_key)
+    # if user requests to see private key
+    if args.key:
+        print('Private Key:', Wallet.private_key)
+
     print('Address:', address, '\n')
 
     ledger = load_ledger()
