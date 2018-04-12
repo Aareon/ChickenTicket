@@ -41,13 +41,13 @@ def generate_ECDSA_keys():
     sk = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1) # signing key
     priv_key = sk.to_string().hex() # private key
     logging.info('Private key generated')
-    
+
     # Generate public key
     vk = sk.get_verifying_key() # verifying key
     pk = vk.to_string().hex() # unencoded public key
     pub_key = base64.b64encode(bytes.fromhex(pk)) # encode `pk` to make it shorter
     logging.info('Public key generated, here it is; %s', pub_key)
-    
+
     return pub_key, priv_key
 
 
@@ -104,12 +104,9 @@ def get_balance(wallet, ledger):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Pure Python implementation of a cryptocurrency blockchain')
-    parser.add_argument('-key', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
-    parser.add_argument('--K', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
-    parser.add_argument('-newaddress', help="Generates a new address, public key, and private key", action='store_true')
-    parser.add_argument('--N', help="Generates a new address, public key, and private key", action='store_true')
-    parser.add_argument('--A', help='Adds a node to peers list for this instance', action='store_true')
-    parser.add_argument('--addnode', help='Adds a node to peers list for this instance', action='store_true')
+    parser.add_argument('-key', '-K', help="Prints private key. (Don't do this unless you know what you're doing!)", action='store_true')
+    parser.add_argument('-newaddress', '-N', help="Generates a new address, public key, and private key", action='store_true')
+    parser.add_argument('--addnode', '-A', help='Adds a node to peers list for this instance', action='store_true')
     args = parser.parse_args()
 
     print("ChickenTicket CLI")
@@ -119,7 +116,7 @@ if __name__ == "__main__":
     wallet = load_wallet()
 
     addresses = wallet.query(Wallet.address).all()
-    if len(addresses) == 0 or args.newaddress or args.N:
+    if len(addresses) == 0 or args.newaddress:
         logging.info('Getting new public/private keys and address')
         # generate public and private keys
         public_key, private_key = generate_ECDSA_keys()
@@ -141,10 +138,10 @@ if __name__ == "__main__":
     else:
         # get the already existing key pair from the wallet, but only the most recently made
         public_key, private_key, address = wallet.query(Wallet.public_key, Wallet.private_key, Wallet.address).all()[0]
-    
+
     print('Public Key:', public_key)
     # if user requests to see private key
-    if args.key or args.K:
+    if args.key:
         print('Private Key:', Wallet.private_key)
 
     print('Address:', address, '\n')
