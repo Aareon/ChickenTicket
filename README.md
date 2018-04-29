@@ -13,7 +13,7 @@ Chicken Ticket uses a number of technologies:
 
 ### Installing from source
 Chicken Ticket requires [Python](https://python.org/) 3.5+ to run.
-Chicken Ticket requires [Visual Studio Build Tools](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017) to install the Allium algorithm.
+Chicken Ticket requires [Visual Studio Build Tools](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017) or any GCC compiler to install the C-based libraries.
 
 Clone this repository after installing [Git](https://git-scm.com):
 ```sh
@@ -47,7 +47,7 @@ Feel free to join for support and development questions.
  - ~~Release to the public~~ Done!
  - Peers and Nodes (including websocket handling, etc. Should be fun 😅)
  - Sending and receiving transactions
- - Mining (see: [Allium](https://github.com/JayDDee/cpuminer-opt/blob/master/algo/lyra2/allium.c))
+ - Mining
  - Clean up!
  - Graphical Wallet
 
