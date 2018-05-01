@@ -13,7 +13,7 @@ class BlockException(Exception):
 
 
 class Block:
-    def __init__(self, last_block=None, transactions=[], proof=None):
+    def __init__(self, last_block=None, transactions=[], proof=None, nonce=None):
         self.last_block = last_block
 
         # primarily for handling genesis block creation
@@ -56,6 +56,9 @@ class Block:
         if self.header is None:
             return False
 
+        if self.nonce is None:
+            return False
+
         return True
 
 
@@ -72,7 +75,8 @@ class Block:
             'difficulty': self.difficulty,
             'proof': self.proof,
             'merkle_root': self.merkle_root,
-            'header': self.header
+            'header': self.header,
+            'nonce': self.nonce
         }
         
         return json.dumps(block, sort_keys=True)
