@@ -69,17 +69,11 @@ class Block:
             'timestamp': self.timestamp,
             'transactions': self.transactions,
             'previous_proof': self.previous_proof,
-            'difficulty': self.difficulty
+            'difficulty': self.difficulty,
+            'proof': self.proof,
+            'merkle_root': self.merkle_root,
+            'header': self.header
         }
-
-        if self.proof is not None:
-            block['proof'] = self.proof
-
-        if self.merkle_root is not None:
-            block['merkle_root'] = self.merkle_root
-
-        if self.header is not None:
-            block['header'] = self.header
         
         return json.dumps(block, sort_keys=True)
 
