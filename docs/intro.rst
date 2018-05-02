@@ -1,6 +1,5 @@
-# ChickenTicket
-
-[![Python](https://img.shields.io/badge/python-3.6.5-blue.svg)](https://github.com/Aareon/chickenticket)
+ChickenTicket
+===============
 
 Chicken Ticket is a Python powered blockchain solution.
 
