@@ -1,6 +1,6 @@
 # Chicken Ticket
-[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
-[![forthebadge](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com)
+[![BDC Grant Winner](http://blockchaindevelopersclub.com/grant-winner/svg/chickenticket)](http://blockchaindevelopersclub.com/grant-winner/info/chickenticket)
+![PyPI](https://img.shields.io/badge/python-3.5%2C%203.6-blue.svg)
 
 Chicken Ticket is a Python powered blockchain solution. Users are encouraged to meander about the codebase, learn the nitty gritty details of what makes a coin tick, fork and design your own coin, or use as your every day cryptocurrency.
 
