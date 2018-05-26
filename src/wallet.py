@@ -139,10 +139,10 @@ if __name__ == "__main__":
         # get the already existing key pair from the wallet, but only the most recently made
         public_key, private_key, address = wallet.query(Wallet.public_key, Wallet.private_key, Wallet.address).all()[0]
 
-    print('Public Key:', public_key)
+    print('Public Key:', public_key.decode())
     # if user requests to see private key
     if args.key:
-        print('Private Key:', Wallet.private_key)
+        print('Private Key:', wallet.private_key)
 
     print('Address:', address, '\n')
 
