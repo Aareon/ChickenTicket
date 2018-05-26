@@ -39,7 +39,7 @@ class Transaction:
 
         if self.proof is not None:
             transaction['proof'] = self.proof
-        
+
         if self.signature is not None:
             transaction['signature'] = self.signature
         
@@ -53,7 +53,7 @@ class Transaction:
     def sign(self, private_key):
         if self.proof is None:
             return
-            
+
         # signing key, will be used to sign the transaction and generate a signature
         sk = ecdsa.SigningKey.from_string(bytes.fromhex(private_key), curve=ecdsa.SECP256k1)
         self.signature = sk.sign(self.json.encode('utf-8')).hex()
