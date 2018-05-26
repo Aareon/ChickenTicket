@@ -1,3 +1,4 @@
 SQLAlchemy==1.2.2
 pycryptodomex==3.5.1
 ecdsa==0.13
+merkletools==1.0.3

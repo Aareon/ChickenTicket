@@ -35,14 +35,8 @@ def chicken_hash(data: bytes):
     a = BLAKE2b.new(data=data, digest_bits=256).digest()
     b = keccak.new(data=a, digest_bits=256).digest()
     c = Groestl().new(b).digest()
-    d = keccak.new(data=c, digest_bits=256)
+    return keccak.new(data=c, digest_bits=256)
 
-    for _ in range(3):
-        a = BLAKE2b.new(data=d, digest_bits=256).digest()
-        b = keccak.new(data=a, digest_bits=256).digest()
-        c = Groestl().new(b).digest()
-        d = keccak.new(data=c, digest_bits=256)
-    return d
 
 
 if __name__ == '__main__':

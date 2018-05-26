@@ -1,22 +1,28 @@
+import argparse
 import base64
 import hashlib
 import logging
 import os
 import sys
-import argparse
 from decimal import Decimal, getcontext
 
-getcontext().prec = 8
-
 import ecdsa
+from base58 import b58encode
+from Cryptodome.Hash import RIPEMD160
+
+from crypto.chicken import chicken_hash
+from ledger import Ledger
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from ledger import Ledger
+# set decimal precision
+getcontext().prec = 8
 
+# set up logger
 logging.basicConfig(level=logging.INFO, filename="wallet.log", format='%(asctime)s %(message)s') # include timestamp
 
+# basic SQLAlchemy stuff
 Base = declarative_base()
 
 class Wallet(Base):
@@ -39,23 +45,43 @@ def generate_ECDSA_keys():
     # Generate private key
     logging.info('Generating keys: curve=ecdsa.SECP256k1')
     sk = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1) # signing key
-    priv_key = sk.to_string().hex() # private key
+    private_key = sk.to_string().hex() # private key
     logging.info('Private key generated')
 
     # Generate public key
     vk = sk.get_verifying_key() # verifying key
-    pk = vk.to_string().hex() # unencoded public key
-    pub_key = base64.b64encode(bytes.fromhex(pk)) # encode `pk` to make it shorter
-    logging.info('Public key generated, here it is; %s', pub_key)
+    public_key = vk.to_string()
+    logging.info('Public key generated, here it is; %s', public_key)
 
-    return pub_key, priv_key
+    return public_key, private_key
 
 
-def generate_address(pub_key):
+def generate_address(public_key):
     """Generate an address from a bytes-like public key"""
-    address = hashlib.sha256(pub_key).hexdigest()
+    pub_hash = chicken_hash(public_key)
+
+    # create the address w/o the byte checksum and the prefix
+    address_hash = pub_hash.hexdigest()[38:]
+
+    # create the checksum of the address by hashing the address again,
+    # encoding the result, and taking the last 4 of the encoding
+    checksum = b58encode(address_hash.encode('ascii'))[:4].upper()
+    address = '0x' + address_hash + checksum.decode()
     logging.info('Generated address. Here it is; %s' % address)
     return address
+
+
+def is_address(address):
+    if len(address) != 32:
+        return False
+
+    if not address.startswith('0x'):
+        return False
+
+    address = address.replace('0x', '')
+    address_checksum = address[-4:]
+    checksum = b58encode(address[:-4].encode('ascii'))[:4].upper().decode()
+    return address_checksum == checksum
 
 
 def load_wallet(password=''):
@@ -89,13 +115,14 @@ def load_ledger():
 def get_balance(wallet, ledger):
     addresses = wallet.query(Wallet.address).all()
 
-    balance = 0
     ledger_state = True
     try:
+        balance = 0
         for address in addresses:
             transactions = ledger.query(Ledger.amount).filter_by(recipient=address[0]).all()
             for amount in transactions:
                 balance += amount[0]
+        return True
     except:
         ledger_state = False
         pass
@@ -144,7 +171,8 @@ if __name__ == "__main__":
     if args.key:
         print('Private Key:', wallet.private_key)
 
-    print('Address:', address, '\n')
+    print('Address:', address)
+    print('Address is valid:', is_address(address), '\n')
 
     ledger = load_ledger()
     balance, ledger_state = get_balance(wallet, ledger)
