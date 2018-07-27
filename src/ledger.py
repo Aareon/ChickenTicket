@@ -1,11 +1,29 @@
-import logging
+import platform
 import sys
+import getpass
+import os
 
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-logging.basicConfig(level=logging.INFO, filename="wallet.log", format='%(asctime)s %(message)s') # include timestamp
+from utils import slog
+
+# get file path of '.chickenticket' folder
+system = platform.system()
+if system == 'Windows':
+    fore = 'C:\\Users\\{}\\AppData\\Local'.format(getpass.getuser())
+else:
+    fore = '~'
+
+fp = '{}\\.chickenticket'.format(fore)
+if not os.path.exists(fp+'\\logs'):
+    os.makedirs(fp+'\\logs')
+
+if not os.path.exists(fp+'\\ledger'):
+    os.makedirs(fp+'\\ledger')
+
+logger = slog.getLogger('{}\\wallet.log'.format(fp), level_input='DEBUG', terminal_output=True)
 
 Base = declarative_base()
 
@@ -49,16 +67,16 @@ class Ledger(Base):
         }
 
 def load_ledger():
-    logging.info('Creating ledger database engine...')
+    logger.info('Creating ledger database engine...')
     try:
-        engine = create_engine('sqlite:///ledger.db?check_same_thread=False', echo=False)
-        logging.info('Loaded `ledger.db`')
+        engine = create_engine('sqlite:///{}\\ledger\\ledger.db?check_same_thread=False'.format(fp), echo=False)
+        logger.info('Loaded `ledger.db`')
         Session = sessionmaker(bind=engine)
         session = Session()
         Base.metadata.create_all(engine)
         return session
     except:
-        logging.warning('Failed to load `ledger.db`, exiting...')
+        logger.warning('Failed to load `ledger.db`, exiting...')
         return None
 
 if __name__ == "__main__":
@@ -71,7 +89,7 @@ if __name__ == "__main__":
     ledger = load_ledger()
     if not ledger:
         print("Unable to open records")
-        logging.error("Failed to open ledger record")
+        logger.error("Failed to open ledger record")
         sys.exit(1)
 
     for transaction in ledger.query(Ledger).all():
