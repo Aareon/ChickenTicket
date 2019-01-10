@@ -5,12 +5,17 @@ import groestlcoin_hash
 
 
 class Groestl:
+    """ An almost compliant hashlib-like wrapper for the
+    Groestl hashing algorithm"""
+    __slots__ = ("data", "digest_bits", "hash",)
+
     def __init__(self):
         self.data = None
         self.digest_bits = None
+        self.hash = None
 
     def new(self, data):
-        self.data = data if isinstance(data, bytes) else data.encode('utf-8')
+        self.data = data if isinstance(data, bytes) else data.encode("utf-8")
         self.digest_bits = len(data)
         self.hash = groestlcoin_hash.getHash(self.data, self.digest_bits)
         return self
@@ -38,6 +43,5 @@ def chicken_hash(data: bytes):
     return keccak.new(data=c, digest_bits=256)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(chicken_hash('test'.encode('utf-8')).hexdigest())
