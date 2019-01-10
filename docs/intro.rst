@@ -7,11 +7,10 @@ Users are encouraged to meander about the codebase, learn the nitty gritty detai
 
 .. warning::
 
-    At the time of this writing, ChickenTicket is designed for Python 3.6.
+    At the time of this writing, ChickenTicket is designed for Python >=3.6.
     No guarantees can be made that any version above or below the aforementioned
     version will be supported at a later date.
 
 License
 ----
-
-GPL
+MIT
