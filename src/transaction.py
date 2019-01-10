@@ -1,8 +1,12 @@
-import json
 import time
 
 import ecdsa
 from crypto.chicken import chicken_hash
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 
 def dust(amount):
@@ -11,6 +15,17 @@ def dust(amount):
 
 
 class Transaction:
+    __slots__ = (
+        "index",
+        "timestamp",
+        "sender",
+        "recipient",
+        "amount",
+        "openfield",
+        "proof",
+        "signature",
+    )
+
     def __init__(self, index, sender, recipient, amount, openfield=''):
         self.index = index
         self.timestamp = int(time.time() * 100000)
