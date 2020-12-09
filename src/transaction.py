@@ -2,6 +2,7 @@ import time
 
 import ecdsa
 from crypto.chicken import chicken_hash
+from utils.time_tools import get_timestamp
 
 try:
     import ujson as json
@@ -28,7 +29,7 @@ class Transaction:
 
     def __init__(self, index, sender, recipient, amount, openfield=''):
         self.index = index
-        self.timestamp = int(time.time() * 100000)
+        self.timestamp = get_timestamp()
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
@@ -44,19 +45,15 @@ class Transaction:
     @property
     def json(self):
         transaction = {
-            'index': self.index,
-            'timestamp': self.timestamp,
-            'sender': self.sender,
-            'recipient': self.recipient,
-            'amount': self.amount,
-            'openfield': self.openfield
+            "index": self.index,
+            "timestamp": self.timestamp,
+            "sender": self.sender,
+            "recipient": self.recipient,
+            "amount": self.amount,
+            "openfield": self.openfield,
+            "proof": self.proof or "",
+            "signature": self.signature or "",
         }
-
-        if self.proof is not None:
-            transaction['proof'] = self.proof
-
-        if self.signature is not None:
-            transaction['signature'] = self.signature
         
         return json.dumps(transaction, sort_keys=True)
 
