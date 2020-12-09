@@ -2,6 +2,7 @@ import time
 import json
 from crypto.chicken import chicken_hash
 from utils.merkles import Merkle
+from utils.time_tools import get_timestamp
 from transaction import Transaction, dust
 from wallet import generate_ECDSA_keys
 
@@ -25,7 +26,7 @@ class Block:
             self.previous_proof = '0'
 
         self.transactions = transactions
-        self.timestamp = int(time.time() * 100000)
+        self.timestamp = get_timestamp()
         self.proof = proof
 
         if last_block is not None:
@@ -47,6 +48,9 @@ class Block:
     def is_ready(self):
         if self.nonce is None:
             return False, 'nonce'
+        
+        if self.header is None:
+            return False, 'header'
 
         return True, None
 
@@ -54,8 +58,8 @@ class Block:
     @property
     def json(self):
         is_ready, missing = self.is_ready()
-        if not is_ready:
-            raise BlockException('Block is not ready. Missing {}'.format(missing))
+        if not is_ready and missing is None:
+            raise BlockException("Block is not ready. Missing {missng}")
 
         block = {
             'index': self.index,
@@ -87,7 +91,7 @@ class Block:
     @property
     def header(self):
         if self.merkle_root is not None:
-            return "{self.previous_proof}{self.merkle_root}{self.timestamp}{self.nonce}"
+            return f"{self.previous_proof}{self.merkle_root}{self.timestamp}{self.nonce}"
         else:
             return None
 
@@ -108,7 +112,7 @@ class Block:
         # in this case, its every 150000th block
         period_count = (self.last_block.index + 1) // 101000
         period_count -= 2 # free periods, how many times the bomb can be ignored
-        bomb = 2**(period_count)
+        bomb = 2 ** (period_count)
 
         # calculation for target
         self.difficulty = (self.last_block.difficulty + offset * sign) + bomb
@@ -148,7 +152,7 @@ class Blockchain:
     chain = [Block().create_genesis_block()]
 
     def __repr__(self):
-        return "<Blockchain(chain={self.chain})>"
+        return f"<Blockchain(chain={self.chain})>"
 
 if __name__ == '__main__':
     from pprint import pprint
