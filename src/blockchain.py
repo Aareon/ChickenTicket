@@ -87,9 +87,9 @@ class Block:
     @property
     def header(self):
         if self.merkle_root is not None:
-            return '{}{}{}{}'.format(self.previous_proof, self.merkle_root, self.timestamp, self.nonce)
+            return "{self.previous_proof}{self.merkle_root}{self.timestamp}{self.nonce}"
         else:
-            raise AttributeError('Must get merkle root before getting header')
+            return None
 
     
     def calculate_difficulty(self):
@@ -148,7 +148,7 @@ class Blockchain:
     chain = [Block().create_genesis_block()]
 
     def __repr__(self):
-        return '<Blockchain(chain={})>'.format(self.chain)
+        return "<Blockchain(chain={self.chain})>"
 
 if __name__ == '__main__':
     from pprint import pprint
