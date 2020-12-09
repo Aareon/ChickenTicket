@@ -6,15 +6,13 @@ from utils.time_tools import get_timestamp
 from transaction import Transaction, dust
 from wallet import generate_ECDSA_keys
 
-VERSION = 1
-
 
 class BlockException(Exception):
     pass
 
 
 class Block:
-    def __init__(self, last_block=None, transactions=[], proof=None, nonce=None):
+    def __init__(self, last_block=None, timestamp: int=None, transactions=[], proof=None, nonce=None):
         self.last_block = last_block
 
         # primarily for handling genesis block creation
@@ -26,7 +24,7 @@ class Block:
             self.previous_proof = '0'
 
         self.transactions = transactions
-        self.timestamp = get_timestamp()
+        self.timestamp = timestamp or get_timestamp()
         self.proof = proof
 
         if last_block is not None:
@@ -38,12 +36,10 @@ class Block:
         self.merkle_root = None
         self.nonce = 0
 
-
     def __repr__(self):
         return '<Block(index={}, timestamp={}, previous_proof={}, proof={}, difficulty={}, transactions={}'.format(
                self.index, self.timestamp, self.previous_proof, self.proof, self.difficulty, self.transactions
         )
-
 
     def is_ready(self):
         if self.nonce is None:
@@ -53,7 +49,6 @@ class Block:
             return False, 'header'
 
         return True, None
-
 
     @property
     def json(self):
@@ -75,7 +70,6 @@ class Block:
         
         return json.dumps(block, sort_keys=True)
 
-
     def get_merkle_root(self):
         for tx in self.transactions:
             data = tx.encode('utf-8')
@@ -87,14 +81,12 @@ class Block:
         self.merkle_root = self.merkle_tree.get_merkle_root()
         return self.merkle_root
 
-
     @property
     def header(self):
         if self.merkle_root is not None:
             return f"{self.previous_proof}{self.merkle_root}{self.timestamp}{self.nonce}"
         else:
             return None
-
     
     def calculate_difficulty(self):
         # the factor to move difficulty, how much it should be moved at one time
@@ -118,38 +110,35 @@ class Block:
         self.difficulty = (self.last_block.difficulty + offset * sign) + bomb
         return self
 
-
     def hash(self):
         data = str(self.json).encode('utf-8')
         self.proof = chicken_hash(data).hexdigest()
         return self
         
-
     def add_transactions(self, *transactions):
         for tx in transactions:
             self.transactions.append(tx.json)
         return self
 
+def create_genesis_block(self):
+    block = Block()
 
-    def create_genesis_block(self):
-        self.timestamp = 152519919871659
-        self.previous_proof = '0'
-        self.difficulty = 1
-        self.nonce = 0
+    _, private_key = generate_ECDSA_keys()
 
-        _, private_key = generate_ECDSA_keys()
+    tx = Transaction(0, 'genesis', '0x34cf5eeb59c58e5f017a63dbb87VPJ', dust(1), openfield='genesis')
+    tx.create_genesis_transaction(block.timestamp, private_key)
+    tx.hash()
 
-        tx = Transaction(0, 'genesis', '0x34cf5eeb59c58e5f017a63dbb87VPJ', dust(1), openfield='genesis')
-        tx.create_genesis_transaction(self.timestamp, private_key)
-        tx.hash()
-
-        self.add_transactions(tx)
-        self.hash()
-        return self
+    block.add_transactions(tx)
+    block.hash()
+    return block
 
 
 class Blockchain:
-    chain = [Block().create_genesis_block()]
+    chain = [create_genesis_block()]
+    
+    def add_block(self, block):
+        self.chain.append(block)
 
     def __repr__(self):
         return f"<Blockchain(chain={self.chain})>"
