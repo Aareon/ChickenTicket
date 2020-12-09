@@ -17,30 +17,23 @@ from sqlalchemy.orm import sessionmaker
 from crypto.chicken import chicken_hash
 from ledger import Ledger
 from utils import slog
+from config import LOGS_DIR, DATA_DIR
 
-# get file path of '.chickenticket' folder
-system = platform.system()
-if system == 'Windows':
-    fore = 'C:\\Users\\{}\\AppData\\Local'.format(getpass.getuser())
-else:
-    fore = '~'
-
-fp = '{}\\.chickenticket'.format(fore)
-if not os.path.exists(fp+'\\logs'):
-    os.makedirs(fp+'\\logs')
-
-if not os.path.exists(fp+'\\ledger'):
-    os.makedirs(fp+'\\ledger')
+# make sure folders exist
+LOGS_DIR.mkdir(parents=True, exists_ok=True)
+DATA_DIR.mkdir(parents=True, exists_ok=True)
 
 # set decimal precision
 getcontext().prec = 8
 
 # set up logger
-logger = slog.getLogger('{}\\wallet.log'.format(fp), level_input='DEBUG', terminal_output=True)
-logger.debug('Logging to path "{}\\wallet.log"'.format(fp))
+wallet_log_fp = LOGS_DIR / "wallet.log"
+logger = slog.getLogger(wallet_log_fp, level_input='DEBUG', terminal_output=True)
+logger.debug(f'Logging to path {wallet_log_fp}')
 
 # basic SQLAlchemy stuff
 Base = declarative_base()
+
 
 class Wallet(Base):
     """Represents a wallet"""
@@ -52,15 +45,13 @@ class Wallet(Base):
     private_key = Column(String(length=64), nullable=False, unique=True)
 
     def __repr__(self):
-        return '<Wallet(id=\'{}\', address=\'{}\', public_key=\'{}\', private_key=\'{}\')>'.format(
-            self.id, self.address, self.public_key, self.private_key
-        )
+        return f"<Wallet(id='{self.id}', address='{self.address}', public_key='{self.public_key}', private_key='{self.private_key}')>"
 
 
 def generate_ECDSA_keys():
     """Generate and return new public and private keys using an ecdsa curve"""
     # Generate private key
-    logger.info('Generating keys: curve=ecdsa.SECP256k1')
+    logger.info("Generating keys: curve=ecdsa.SECP256k1")
     sk = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1) # signing key
     private_key = sk.to_string().hex() # private key
     logger.info('Private key generated')
@@ -68,7 +59,7 @@ def generate_ECDSA_keys():
     # Generate public key
     vk = sk.get_verifying_key() # verifying key
     public_key = vk.to_string()
-    logger.info('Public key generated, here it is; %s', public_key)
+    logger.info(f"Public key generated: {self.public_key}")
 
     return public_key, private_key
 
@@ -83,8 +74,8 @@ def generate_address(public_key):
     # create the checksum of the address by hashing the address again,
     # encoding the result, and taking the last 4 of the encoding
     checksum = b58encode(address_hash.encode('ascii'))[:4].upper()
-    address = '0x' + address_hash + checksum.decode()
-    logger.info('Generated address. Here it is; %s' % address)
+    address = f"0x{self.address_hash}{checksum.decode()}"
+    logger.info(f"Generated address: {self.address}")
     return address
 
 
@@ -104,7 +95,7 @@ def is_address(address):
 def load_wallet(password=''):
     logger.info('Creating wallet database engine...')
     try:
-        engine = create_engine('sqlite:///{}\\wallet.db?check_same_thread=False'.format(fp), echo=False)
+        engine = create_engine(f"sqlite:///{DATA_DIR / 'wallet.db'}?check_same_thread=False", echo=False)
         logger.info('Loaded `wallet.db`')
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -118,7 +109,7 @@ def load_wallet(password=''):
 def load_ledger():
     logger.info('Creating ledger database engine...')
     try:
-        engine = create_engine('sqlite:///{}\\ledger\\ledger.db?check_same_thread=False'.format(fp), echo=False)
+        engine = create_engine(f"sqlite:///{LEDGER_DIR / 'ledger.db'}?check_same_thread=False", echo=False)
         logger.info('Loaded `ledger.db`')
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -183,16 +174,18 @@ if __name__ == "__main__":
         # get the already existing key pair from the wallet, but only the most recently made
         public_key, private_key, address = wallet.query(Wallet.public_key, Wallet.private_key, Wallet.address).all()[0]
 
-    print('Public Key:', public_key)
+    print(f"Public key: {public_key}")
+
     # if user requests to see private key
     if args.key:
-        print('Private Key:', wallet.private_key)
+        print(f"Private Key: {wallet.private_key}")
 
-    print('Address:', address)
-    print('Address is valid:', is_address(address), '\n')
+    print(f"Address: {address}")
+    print(f"Address {'is' if is_address(address) else 'is not'} valid")
 
     ledger = load_ledger()
     balance, ledger_state = get_balance(wallet, ledger)
-    print('Balance:', Decimal(balance/100000000), 'CHKN')
+    print(f"Balance: {dust(Decimal(balance))} CHKN"}
+
     if not ledger_state:
         print('Ledger not present/synced')
