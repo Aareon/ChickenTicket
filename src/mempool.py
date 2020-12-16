@@ -1,40 +1,39 @@
-import logging
+from dataclasses import dataclass
+from typing import List
+from transaction import Transaction
 
-from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
-logging.basicConfig(level=logging.INFO, filename="wallet.log", format='%(asctime)s %(message)s') # include timestamp
+@dataclass
+class MempoolTx:
+    tx: Transaction
+    confirmations: int
 
-Base = declarative_base()
 
-class Mempool(Base):
-    __tablename__ = 'transactions'
+class Mempool:
+    transactions: List[MempoolTx]
+    limit: int
+    def __init__(self, limit=10):
+        self.transactions = []
+        self.limit = limit
 
-    id = Column(Integer, primary_key=True, nullable=False)
-    timestamp = Column(Integer, nullable=False)
-    address = Column(String(length=64), nullable=False)
-    recipient = Column(String(length=64), nullable=False)
-    amount = Column(Integer, nullable=False)
-    signature = Column(String, nullable=False) # signing key used to sign the transaction (PKCS1_v1_5)
-    public_key = Column(String(length=88), nullable=False)
-    openfield = Column(String, nullable=True)
+    def add_transaction(self, tx):
+        if len(self.transactions) + 1 > self.limit:
+            return None
 
-    def __repr__(self):
-        return '<Transaction(id=\'{}\', timestamp=\'{}\', address=\'{}\', recipient=\'{}\', amount=\'{}\', signature=\'{}\', public_key=\'{}\', openfield=\'{}\')>'.format(
-            self.id, self.timestamp, self.address, self.recipient,
-            self.amount, self.signature, self.public_key, self.openfield
-        )
+        mem_tx = MempoolTx(tx, 0)
+        self.transactions.append(mem_tx)
+        return mem_tx
 
-def load_mempool():
-    logging.info('Creating mempool database engine...')
-    try:
-        engine = create_engine('sqlite:///mempool.db?check_same_thread=False', echo=False)
-        logging.info('Loaded `mempool.db`')
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        Base.metadata.create_all(engine)
-        return session
-    except:
-        logging.warning('Failed to load `mempool.db`, exiting...')
-        return None
+    def confirm_transaction(self, tx):
+        try:
+            idx = [m.tx for m in self.transactions].index(tx)
+        except ValueError:
+            idx = None
+
+        if idx is not None:
+            self.transactions[idx].confirmations += 1
+            return True
+        return False
+
+    def __str__(self):
+        return f"Mempool(transactions: {self.transactions}, limit: {self.limit})>"
