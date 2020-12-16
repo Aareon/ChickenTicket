@@ -8,6 +8,10 @@ CURVE = ecdsa.SECP256k1
 @dataclass
 class PubKey:
     data: str
+
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         return hexdigest(self.data)
 
@@ -15,6 +19,7 @@ class PubKey:
 @dataclass
 class PrivKey:
     data: str
+
     def __str__(self):
         return str(self.data)
 
