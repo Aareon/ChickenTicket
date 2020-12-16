@@ -64,6 +64,7 @@ class Wallet:
         addr = Address.generate(key)
         if addr not in self.addresses:
             self.addresses.append(addr)
+        return addr
 
     def __repr__(self):
         return f"<Wallet(node: {self.node}, aliases: {self.aliases}, addresses: {self.addresses})>"
@@ -73,5 +74,6 @@ if __name__ == "__main__":
     node = Node()
     keys = KeyPair.new()
     wallet = Wallet(node)
-    wallet.create_address(keys)
+    address = wallet.create_address(keys)
+    node.add_watching(address)
     print(repr(wallet))
