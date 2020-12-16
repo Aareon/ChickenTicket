@@ -23,6 +23,7 @@ class PrivKey:
     def __str__(self):
         return str(self.data)
 
+
 @dataclass
 class KeyPair:
     pub: PubKey
