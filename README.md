@@ -2,6 +2,21 @@
 ![PyPI](https://img.shields.io/badge/python-3.6-blue.svg)
 
 Chicken Ticket is a Python powered blockchain solution. Users are encouraged to meander about the codebase, learn the nitty gritty details of what makes a coin tick, fork and design your own coin, or use as your every day cryptocurrency.
+I'm kind of rewriting things, so things may get weird. I'm doing so to make ChickenTicket even better as a library.
+Everything is broken down into finer components. Transactions, blocks, the node, all have a separate file dedicate to their respective logic.
+Most, if not all, of the core elements of the blockchain can be serialized into a string. For example:
+`<Transaction(id: 0, timestamp: 16089010, inputs: [<Input(0, Decimal("1.0"))>, ...`
+So on and so forth. Simply convert any of the following objects (after instantiation) with `str(cls)`:
+ • Transaction
+ • MempoolTx
+ • Block
+ • Mempool
+ • Input
+ • Output
+ • Address
+ • Alias
+ • Peer
+ • KeyPair
 
 ### Tech
 Chicken Ticket uses a number of technologies:
@@ -39,8 +54,7 @@ Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
 
 ### Todos
  - MOAR TESTS
- - ~~Probably need to generate the genesis block, just saying.~~ Done!
- - ~~Release to the public~~ Done!
+ - ~~Probably need to generate the genesis block, just saying.~~ Done
  - Peers and Nodes (including websocket handling, etc. Should be fun 😅)
  - Sending and receiving transactions
  - Mining
