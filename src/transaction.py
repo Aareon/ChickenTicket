@@ -1,81 +1,125 @@
+from dataclasses import dataclass
+from decimal import Decimal
 import time
+from typing import List
 
 import ecdsa
+
+from crypto import hexdigest
 from crypto.chicken import chicken_hash
-from utils.time_tools import get_timestamp
-
-try:
-    import ujson as json
-except ImportError:
-    import json
+from keys import KeyPair, CURVE
 
 
-def dust(amount):
-    """Multiply an amount according to dust"""
-    return amount*100000000
+class TXVersion:
+    ver1 = 0x1
+    ver2 = 0x2
+    ver3 = 0x3
+
+
+@dataclass
+class Input:
+    tx_hash: str
+    output_id: int
+
+
+@dataclass
+class Output:
+    recipient: str  # address the amount is to be sent to
+    amount: Decimal
 
 
 class Transaction:
-    __slots__ = (
-        "index",
-        "timestamp",
-        "sender",
-        "recipient",
-        "amount",
-        "openfield",
-        "proof",
-        "signature",
-    )
+    id: int
+    ver: TXVersion
+    timestamp: int
+    inputs: List[ Input ]  # tx_hash, output_id
+    outputs: List[ Output ]  # recipient, amount
+    fee: Decimal
+    proof: bytes
+    signature: bytes
+    pubkey: bytes
 
-    def __init__(self, index, sender, recipient, amount, openfield=''):
-        self.index = index
-        self.timestamp = get_timestamp()
-        self.sender = sender
-        self.recipient = recipient
-        self.amount = amount
-        self.openfield = openfield
-        self.proof = None
-        self.signature = None
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id")
+        self.ver = kwargs.get("ver") or kwargs.get("version")
+        self.timestamp = kwargs.get("timestamp") or time.time()
+        self.inputs = kwargs.get("inputs") or []
+        self.outputs = kwargs.get("outputs") or []
+        self.fee = kwargs.get("fee")
+        self.proof = kwargs.get("proof")
+        self.signature = kwargs.get("signature")
+        self.pubkey = kwargs.get("pubkey")
+
+    def __str__(self):
+        s = f"<Transaction(id: {self.id}, ver: {self.ver}, timestamp: {self.timestamp}, inputs: {self.inputs}, outputs: {self.outputs}, fee: {self.fee}"
+        if hasattr(self, "proof"):
+            s += f", proof: {self.proof}"
+        if hasattr(self, "signature"):
+            s += f", signature: {self.signature}"
+        if hasattr(self, "pubkey"):
+            s += f", pubkey: {self.pubkey}"
+
+        s += ")>"
+        return s
 
     def __repr__(self):
-        return '<Transaction(index={}, timestamp={}, sender={}, recipient={}, amount={}, openfield={})>'.format(
-            self.index, self.timestamp, self.sender, self.recipient, self.amount, self.openfield
-        )
-
-    @property
-    def json(self):
-        transaction = {
-            "index": self.index,
-            "timestamp": self.timestamp,
-            "sender": self.sender,
-            "recipient": self.recipient,
-            "amount": self.amount,
-            "openfield": self.openfield,
-            "proof": self.proof or "",
-            "signature": self.signature or "",
-        }
-        
-        return json.dumps(transaction, sort_keys=True)
+        return str(self)
 
     def hash(self):
-        data = str(self.json).encode('utf-8')
-        self.proof = chicken_hash(data).hexdigest()
-        return self
+        h = chicken_hash(str(self))
+        self.proof = h.hexdigest()
+        return h
 
-    def sign(self, private_key):
-        if self.proof is None:
+    def add_input(self, input):
+        if not hasattr(self, "inputs"):
+            self.inputs = [input]
             return
+        self.inputs.append(input)
 
-        # signing key, will be used to sign the transaction and generate a signature
-        sk = ecdsa.SigningKey.from_string(bytes.fromhex(private_key), curve=ecdsa.SECP256k1)
-        self.signature = sk.sign(self.json.encode('utf-8')).hex()
+    def add_output(self, output):
+        if not hasattr(self, "outputs"):
+            self.outputs = [output]
+            return
+        self.outputs.append(output)
 
-        return self
+    def sign(self, key: KeyPair):
+        if not hasattr(self, "proof") or self.proof is None:
+            self.hash()
+        if isinstance(key, KeyPair):
+            priv_key = key.priv
+            self.pubkey = key.pub
+        elif isinstance(key, (bytes, str,)):
+            priv_key = key
+        else:
+            raise TypeError(f"cannot sign transaction with key: {key}")
+        sk = ecdsa.SigningKey.from_string(bytes.fromhex(str(priv_key)), curve=CURVE)
+        self.signature = hexdigest(sk.sign(bytes(str(self), encoding="utf-8")))
+        return self.signature
 
-    def create_genesis_transaction(self, timestamp, private_key):
-        self.timestamp = timestamp
-        self.hash()
 
-        self.signature = '5a0f2ea2036c74bb866a524b5028868648eb85938609466032cd316a89da7bd7d7e2fec0d3973023f5cdf9604315b9c78bde57df08c95c9b61f816775ac85a06'
+if __name__ == "__main__":
+    # test creating a transaction
+    tx = Transaction()
+    tx.id = 0
+    tx.ver = TXVersion.ver1
+    tx.timestamp = int(time.time())
+    tx.fee = Decimal("1.0")
 
-        return self.json
+    # genesis input and output
+    genesis = "genesis"
+    ipt = Input(chicken_hash(genesis + "input").hexdigest(), 0)
+    tx.add_input(ipt)
+
+    opt = Output("0x0", Decimal("1.0"))
+    tx.add_output(opt)
+
+    # test signing
+    tx.hash()
+    # tx.sign() will automatically hash the transaction if not already done so.
+    # Calling it explicitly is the preferred behavior, though.
+    keys = KeyPair.new()
+    tx.sign(keys)
+    # I'm attempting to make everything easily printable for not only
+    # debugging purposes, but for message serialization purposes
+    # as well
+    print(tx)
