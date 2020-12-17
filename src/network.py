@@ -17,6 +17,7 @@ from asyncio import StreamReader, StreamWriter
 from dataclasses import dataclass
 from functools import partial
 from random import randrange
+import sys
 from typing import Any, Callable, Mapping, Union
 
 # We intercept the traffic if it starts with these bytes
@@ -169,7 +170,7 @@ class ConnectionPooler:
 
             except Exception as e:
                 print(f"[Error] ({type(e).__name__}: {e}")
-                exit()
+                sys.exit(1)
 
             except asyncio.ConnectionError:
                 print(f"{peer} errored while reading, closing connection")
