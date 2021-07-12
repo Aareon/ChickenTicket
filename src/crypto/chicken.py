@@ -1,5 +1,7 @@
-from hashlib import blake2b as BLAKE2b
-from hashlib import sha3_256 as keccak
+from hashlib import (
+    blake2b as BLAKE2b,
+    sha3_256 as Keccak,
+)
         
 
 def chicken_hash(data: bytes):
@@ -13,9 +15,9 @@ def chicken_hash(data: bytes):
         A :class:`Keccak_Hash` hash object
     """
     a = BLAKE2b(data).digest()
-    b = keccak(a).digest()
-    return keccak(b)
+    b = Keccak(a).digest()
+    return Keccak(b)
 
 
 if __name__ == "__main__":
-    print(chicken_hash(bytes("test", encoding="utf-8").hexdigest())
+    print(chicken_hash(b"test").hexdigest())

@@ -1,11 +1,12 @@
+from logging import getLogger
 from typing import List, Union
 
 from base58 import b58encode
 
 from crypto.chicken import chicken_hash
 from keys import KeyPair
-from node import Node
 
+logger = getLogger(__name__)
 
 class Address:
     LENGTH: int = 32
@@ -42,21 +43,18 @@ class Address:
         if hasattr(key, "pub"):
             cls.pubkey = key.pub
 
-        pub = chicken_hash(cls.pubkey).hexdigest()
+        pub = chicken_hash(cls.pubkey.data).hexdigest()
 
         cls.prefix = prefix
         cls.addr = pub[38:]
         cls.checksum = b58encode(cls.addr.encode("ascii"))[:4].decode().lower()
         return cls()
 
-
 class Wallet:
-    node: Node
     aliases: List[str]
     addresses: List[Union[str, KeyPair]]
 
-    def __init__(self, node, aliases=[], addresses=[]):
-        self.node = node
+    def __init__(self, aliases=[], addresses=[]):
         self.aliases = aliases
         self.addresses = addresses
 
@@ -67,13 +65,11 @@ class Wallet:
         return addr
 
     def __repr__(self):
-        return f"<Wallet(node: {self.node}, aliases: {self.aliases}, addresses: {self.addresses})>"
+        return f"<Wallet(aliases: {self.aliases}, addresses: {self.addresses})>"
 
 
 if __name__ == "__main__":
-    node = Node()
-    keys = KeyPair.new()
-    wallet = Wallet(node)
-    address = wallet.create_address(keys)
-    node.add_watching(address)
-    print(repr(wallet))
+    kp = KeyPair.new()
+    wallet = Wallet()
+    wallet.create_address(kp)
+    print(wallet.addresses[0])

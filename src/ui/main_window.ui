@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>934</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ChickenTicket Qt Wallet</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>891</width>
+      <height>531</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>2</number>
+    </property>
+    <widget class="QWidget" name="tab_accounts">
+     <attribute name="title">
+      <string>Accounts</string>
+     </attribute>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>10</y>
+        <width>271</width>
+        <height>301</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Balances</string>
+      </property>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>40</y>
+         <width>191</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Available:        0.00 CHKN</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>70</y>
+         <width>191</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Pending:         0.00 CHKN</string>
+       </property>
+      </widget>
+      <widget class="Line" name="line">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>120</y>
+         <width>251</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_3">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>150</y>
+         <width>191</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Total:             0.00 CHKN</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>10</y>
+        <width>561</width>
+        <height>491</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Recent Transactions</string>
+      </property>
+      <widget class="QTableWidget" name="tableWidget">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>20</y>
+         <width>511</width>
+         <height>221</height>
+        </rect>
+       </property>
+       <row>
+        <property name="text">
+         <string/>
+        </property>
+       </row>
+       <column>
+        <property name="text">
+         <string>Type</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Amount</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Confirmations</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Address</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Timestamp</string>
+        </property>
+       </column>
+       <item row="0" column="1">
+        <property name="text">
+         <string>3000</string>
+        </property>
+       </item>
+       <item row="0" column="2">
+        <property name="text">
+         <string>22</string>
+        </property>
+       </item>
+       <item row="0" column="3">
+        <property name="text">
+         <string>some_address</string>
+        </property>
+       </item>
+       <item row="0" column="4">
+        <property name="text">
+         <string>4/20/1969</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QPushButton" name="pushButton_3">
+       <property name="geometry">
+        <rect>
+         <x>314</x>
+         <y>260</y>
+         <width>111</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Add Selected Friend</string>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_friends">
+     <attribute name="title">
+      <string>Friends</string>
+     </attribute>
+     <widget class="QTableWidget" name="tableWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>70</y>
+        <width>511</width>
+        <height>281</height>
+       </rect>
+      </property>
+      <row>
+       <property name="text">
+        <string/>
+       </property>
+      </row>
+      <column>
+       <property name="text">
+        <string>Name</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Friend Balance</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Received</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Sent</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Last Seen</string>
+       </property>
+      </column>
+      <item row="0" column="0">
+       <property name="text">
+        <string>Friend 1</string>
+       </property>
+      </item>
+      <item row="0" column="1">
+       <property name="text">
+        <string>12</string>
+       </property>
+      </item>
+      <item row="0" column="2">
+       <property name="text">
+        <string>100</string>
+       </property>
+      </item>
+      <item row="0" column="3">
+       <property name="text">
+        <string>200</string>
+       </property>
+      </item>
+      <item row="0" column="4">
+       <property name="text">
+        <string>4/20/1969</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QPushButton" name="pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>360</y>
+        <width>91</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Remove Friend</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="listWidget">
+      <property name="geometry">
+       <rect>
+        <x>530</x>
+        <y>70</y>
+        <width>251</width>
+        <height>192</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>Friend Address 1</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Friend Address 2</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QPushButton" name="pushButton_2">
+      <property name="geometry">
+       <rect>
+        <x>530</x>
+        <y>270</y>
+        <width>91</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Remove Address</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>Staking</string>
+     </attribute>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Validators</string>
+     </attribute>
+    </widget>
+   </widget>
+   <widget class="QLCDNumber" name="lcdNumber">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>530</y>
+      <width>64</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Connected peers</string>
+    </property>
+    <property name="value" stdset="0">
+     <double>1.000000000000000</double>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>934</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionBackup_Wallet"/>
+    <addaction name="actionExport"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionPreferences"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionBackup_Wallet">
+   <property name="text">
+    <string>Backup Wallet</string>
+   </property>
+  </action>
+  <action name="actionExport">
+   <property name="text">
+    <string>Export</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
