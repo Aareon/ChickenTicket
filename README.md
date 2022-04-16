@@ -59,7 +59,7 @@ Chicken Ticket uses a number of technologies:
 * [ECDSA] - Elliptic Curve Digital Signature Algorithm. Used for generating keys fast and securely.
 
 ### Installing from source
-Chicken Ticket requires [Python](https://python.org/) 3.5+ to run.
+Chicken Ticket requires [Python](https://python.org/) 3.6+ to run.
 Chicken Ticket requires [Visual Studio Build Tools](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017) or any GCC compiler to install the C-based libraries.
 
 Clone this repository after installing [Git](https://git-scm.com):
