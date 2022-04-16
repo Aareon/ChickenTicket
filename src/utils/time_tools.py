@@ -1,7 +1,7 @@
 import time
 
 
-get_timestamp(ttime=None):
+def get_timestamp(ttime=None):
     """Get a new timestamp, or convert a time integer to timestamp
     
     Args:
@@ -9,6 +9,7 @@ get_timestamp(ttime=None):
         
     returns: int
     """
-    if ttime is not None and isinstance(ttime, int):
-        return int(ttime * 10000000) 
+    if isinstance(ttime, float):
+        return int(ttime * 10000000)
+    return int(time.time() * 10000000)
       
