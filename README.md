@@ -84,6 +84,11 @@ Want to contribute? We ❤️❤️❤️ pull requests!
 Please test code extensively before creating a pull request.
 Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
 
+### Social
+
+- [Join us on Discord](https://discord.gg/d7Mxuc3Wn)
+- [Subscribe to our subreddit](https://reddit.com/r/ChickenTicket)
+
 ### Todos
  - MOAR TESTS
  - ~~Probably need to generate the genesis block, just saying.~~ Done
