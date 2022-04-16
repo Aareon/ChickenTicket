@@ -7,6 +7,10 @@ from merkle import MerkleTree
 from mempool import MempoolTx
 
 
+class BlockException(Exception):
+    """Base class for block related exceptions"""
+
+
 @dataclass
 class BlockHeader:
     previous_proof: str
