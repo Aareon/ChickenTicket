@@ -87,7 +87,7 @@ class Block:
             "header": self.header.to_dict(),
             "last_block": self.last_block,
             "reward": self.reward,
-            "txs": [tx.json() for tx in self.transactions],
+            "txs": [tx.to_dict() for tx in self.transactions],
             "hash": self.proof,
         }
 
