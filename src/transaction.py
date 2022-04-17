@@ -5,7 +5,6 @@ from typing import List
 
 import ecdsa
 
-from crypto import hexdigest
 from crypto.chicken import chicken_hash
 from keys import CURVE, KeyPair
 
@@ -128,7 +127,7 @@ class Transaction:
         else:
             raise TypeError(f"cannot sign transaction with key: {key}")
         sk = ecdsa.SigningKey.from_string(bytes.fromhex(str(priv_key)), curve=CURVE)
-        self.signature = hexdigest(sk.sign(bytes(str(self), encoding="utf-8")))
+        self.signature = sk.sign(bytes(str(self), encoding="utf-8")).hex()
         return self.signature
 
 
