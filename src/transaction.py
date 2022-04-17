@@ -1,13 +1,22 @@
+import time
 from dataclasses import dataclass
 from decimal import Decimal
-import time
 from typing import List
 
 import ecdsa
 
 from crypto import hexdigest
 from crypto.chicken import chicken_hash
-from keys import KeyPair, CURVE
+from keys import CURVE, KeyPair
+
+try:
+    import ujson as json
+
+    USING_UJSON = True
+except ImportError:
+    import json
+
+    USING_UJSON = False
 
 
 class TXVersion:
@@ -21,26 +30,38 @@ class Input:
     tx_hash: str
     output_id: int
 
+    def __str__(self):
+        return json.dumps(self.to_dict(), sort_keys=True)
+
+    def to_dict(self):
+        return {"tx": self.tx_hash, "idx": self.output_id}
+
 
 @dataclass
 class Output:
     recipient: str  # address the amount is to be sent to
     amount: Decimal
 
+    def __str__(self):
+        return json.dumps(self.to_dict(), sort_keys=True)
+
+    def to_dict(self):
+        return {"recipient": self.recipient, "amount": str(self.amount)}
+
 
 class Transaction:
-    id: int
+    idx: int
     ver: TXVersion
     timestamp: int
-    inputs: List[ Input ]  # tx_hash, output_id
-    outputs: List[ Output ]  # recipient, amount
+    inputs: List[Input]  # tx_hash, output_id
+    outputs: List[Output]  # recipient, amount
     fee: Decimal
     proof: bytes
     signature: bytes
     pubkey: bytes
 
     def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
+        self.idx = kwargs.get("idx")
         self.ver = kwargs.get("ver") or kwargs.get("version")
         self.timestamp = kwargs.get("timestamp") or time.time()
         self.inputs = kwargs.get("inputs") or []
@@ -50,25 +71,33 @@ class Transaction:
         self.signature = kwargs.get("signature")
         self.pubkey = kwargs.get("pubkey")
 
-    def __str__(self):
-        s = f"<Transaction(id: {self.id}, ver: {self.ver}, timestamp: {self.timestamp}, inputs: {self.inputs}, outputs: {self.outputs}, fee: {self.fee}"
-        if hasattr(self, "proof"):
-            s += f", proof: {self.proof}"
-        if hasattr(self, "signature"):
-            s += f", signature: {self.signature}"
-        if hasattr(self, "pubkey"):
-            s += f", pubkey: {self.pubkey}"
+    def to_dict(self):
+        data = {
+            "idx": self.idx,
+            "ver": self.ver,
+            "time": self.timestamp,
+            "in": [inp.to_dict() for inp in self.inputs],
+            "out": [out.to_dict() for out in self.outputs],
+            "fee": str(self.fee),
+            "hash": self.proof,
+            "sig": self.signature,
+            "pub": str(self.pubkey),
+        }
+        return data
 
-        s += ")>"
-        return s
+    def json(self):
+        return json.dumps(self.to_dict(), sort_keys=True)
 
     def __repr__(self):
-        return str(self)
+        return self.json()
 
     def hash(self):
-        h = chicken_hash(str(self))
-        self.proof = h.hexdigest()
-        return h
+        data = self.to_dict()
+        del data["hash"]
+        del data["sig"]
+        del data["pub"]
+        self.proof = chicken_hash(json.dumps(data, sort_keys=True).encode()).hex()
+        return self.proof
 
     def add_input(self, input):
         if not hasattr(self, "inputs"):
@@ -88,7 +117,13 @@ class Transaction:
         if isinstance(key, KeyPair):
             priv_key = key.priv
             self.pubkey = key.pub
-        elif isinstance(key, (bytes, str,)):
+        elif isinstance(
+            key,
+            (
+                bytes,
+                str,
+            ),
+        ):
             priv_key = key
         else:
             raise TypeError(f"cannot sign transaction with key: {key}")
@@ -100,14 +135,14 @@ class Transaction:
 if __name__ == "__main__":
     # test creating a transaction
     tx = Transaction()
-    tx.id = 0
+    tx.idx = 0
     tx.ver = TXVersion.ver1
     tx.timestamp = int(time.time())
     tx.fee = Decimal("1.0")
 
     # genesis input and output
     genesis = "genesis"
-    ipt = Input(chicken_hash(genesis + "input").hexdigest(), 0)
+    ipt = Input(chicken_hash((genesis + "input").encode()).hex(), 0)
     tx.add_input(ipt)
 
     opt = Output("0x0", Decimal("1.0"))
