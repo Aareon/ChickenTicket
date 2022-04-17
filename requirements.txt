@@ -1,4 +1,6 @@
-SQLAlchemy==1.3.0
-pycryptodomex==3.5.1
-ecdsa==0.13.3
-merkletools==1.0.3
+pycryptodomex==3.14.1
+ecdsa==0.17.0
+u-msgpack-python==2.7.1
+msgpack==1.0.3
+pyaes==1.6.1
+fernet=1.0.1
