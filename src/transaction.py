@@ -116,13 +116,7 @@ class Transaction:
         if isinstance(key, KeyPair):
             priv_key = key.priv
             self.pubkey = key.pub
-        elif isinstance(
-            key,
-            (
-                bytes,
-                str,
-            ),
-        ):
+        elif isinstance(key, [bytes, str]):
             priv_key = key
         else:
             raise TypeError(f"cannot sign transaction with key: {key}")
