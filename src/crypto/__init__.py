@@ -1,2 +1,3 @@
-def hexdigest(data: bytes) -> str:
-    return "".join(["%02x" % x for x in data])
+"""chickenticket.crypto
+chickenticket.crypto.chicken_hash is might be what you're looking for
+"""
