@@ -15,21 +15,21 @@ class Wallet:
         self.addresses = []
 
     def load_from_der(self, path: Path):
-        """ Load a wallet.der from filepath `path`
-        """
+        """Load a wallet.der from filepath `path`"""
         with open(path, "r+") as f:
             dat = f.read()
-    
+
     def save_to_der(self, path: Path):
-        """ Save a wallet.der to filepath `path`
-        """
+        """Save a wallet.der to filepath `path`"""
         with open(path, "w+") as f:
             f.seek(0)
             # write keypair and seeds here
             f.truncate()
-    
-    def create_wallet_address(self, kp):
-        self.addresses.append([Address.new(kp), kp])
+
+    def create_wallet_address(self, kp: KeyPair):
+        address = Address.new(kp)
+        self.addresses.append([address, kp])
+        return address
 
 
 if __name__ == "__main__":
