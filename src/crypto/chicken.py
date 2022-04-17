@@ -1,47 +1,66 @@
-from Cryptodome.Hash import SHA256, BLAKE2b, keccak
-from Cryptodome.Util.py3compat import bord
+import logging
 
-import groestlcoin_hash
+# set up logger
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(message)s"
+)  # include timestamp
+
+try:
+    # C ext modules
+    from Cryptodome.Hash import SHA3_256, BLAKE2s
+
+    USING_CRYPTODOME = True
+except ImportError:
+    # built-in
+    from hashlib import (
+        sha3_256,
+        blake2s,
+    )
+
+    USING_CRYPTODOME = False
 
 
-class Groestl:
-    """ An almost compliant hashlib-like wrapper for the
-    Groestl hashing algorithm"""
-    __slots__ = ("data", "digest_bits", "hash",)
+if USING_CRYPTODOME:
 
-    def __init__(self):
-        self.data = None
-        self.digest_bits = None
-        self.hash = None
+    def chicken_hash(data: bytes):
+        """Hash some data with the chicken algorithm chain
 
-    def new(self, data):
-        self.data = data if isinstance(data, bytes) else data.encode("utf-8")
-        self.digest_bits = len(data)
-        self.hash = groestlcoin_hash.getHash(self.data, self.digest_bits)
-        return self
-    
-    def digest(self):
-        return self.hash
-    
-    def hexdigest(self):
-        return "".join(["%02x" % bord(x) for x in self.digest()])
-        
+        Args:
+            data (bytes)
+                The bytes-like data to be hashed
 
-def chicken_hash(data: bytes):
-    """Hash some data with the chicken algorithm chain
+        Returns:
+            bytes-like hash
+        """
+        return SHA3_256.new(data=BLAKE2s.new(data=data).digest()).digest()
 
-    Args:
-        data (bytes)
-            The bytes-like data to be hashed
-    
-    Returns:
-        A :class:`Keccak_Hash` hash object
-    """
-    a = BLAKE2b.new(data=data, digest_bits=256).digest()
-    b = keccak.new(data=a, digest_bits=256).digest()
-    c = Groestl().new(b).digest()
-    return keccak.new(data=c, digest_bits=256)
+else:
+
+    def chicken_hash(data: bytes):
+        return sha3_256(blake2s(data).digest()).digest()
 
 
 if __name__ == "__main__":
-    print(chicken_hash('test'.encode('utf-8')).hexdigest())
+    # test stuff
+    from binascii import hexlify
+
+    lib = "hashlib"
+    if USING_CRYPTODOME:
+        lib = "pycryptodomex"
+
+    logging.debug(f"Using {lib}")
+
+    data = b"chicken_hash_test"
+    try:
+        proof = chicken_hash(data)
+        proof_hex = hexlify(chicken_hash(data))
+        assert (
+            proof_hex
+            == b"5c93a073bb49ccdb82f0df269a91eba9d15d707ff98580cdefc5fd96b3022a90"
+        )
+    except AssertionError:
+        logging.error("Test failed!")
+    finally:
+        logging.debug(proof_hex)
+
+    logging.info("Tests done!")
