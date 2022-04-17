@@ -89,6 +89,7 @@ class Block:
             "reward": self.reward,
             "txs": [tx.to_dict() for tx in self.transactions],
             "hash": self.proof,
+            "difficulty": self.difficulty,
         }
 
     def json(self):
@@ -170,7 +171,7 @@ if __name__ == "__main__":
     from transaction import Input, Output, Transaction, TXVersion
 
     tx = Transaction()
-    tx.id = 0
+    tx.idx = 0
     tx.ver = TXVersion.ver1
     tx.fee = Decimal("1.0")
 
