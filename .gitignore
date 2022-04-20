@@ -102,3 +102,7 @@ ENV/
 
 *.db
 .vscode/*
+
+# wallet files / privates
+*.der
+*.pem
