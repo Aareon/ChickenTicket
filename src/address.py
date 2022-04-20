@@ -39,7 +39,7 @@ class Address:
         if hasattr(kp, "pub"):
             cls.pubkey = kp.pub
 
-        pub = chicken_hash(cls.pubkey.data).hex()
+        pub = chicken_hash(cls.pubkey.data.encode("utf-8")).hex()
 
         cls.prefix = prefix
         cls.addr = pub[38:]
