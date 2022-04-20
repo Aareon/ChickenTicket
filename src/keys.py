@@ -13,7 +13,7 @@ class PubKey:
         self.data = data.hex()
 
     def __str__(self):
-        return self.data.hex()
+        return self.data
 
 
 @dataclass
