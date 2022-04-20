@@ -34,10 +34,21 @@ class KeyPair:
 
     @classmethod
     def new(cls):
+        """Generates a new keypair
+        TODO add support for deterministic keys"""
         if hasattr(cls, "pub") or hasattr(cls, "priv"):
             raise Exception("Can not use KeyPair.new() on existing KeyPair")
 
         sk = ecdsa.SigningKey.generate(curve=CURVE)
+        priv = PrivKey(sk.to_string())
+
+        vk = sk.get_verifying_key()
+        pub = PubKey(vk.to_string())
+        return cls(pub, priv)
+    
+    @classmethod
+    def from_privkey_str(cls, priv):
+        sk = ecdsa.SigningKey.from_string(bytes.fromhex(priv), curve=CURVE)
         priv = PrivKey(sk.to_string())
 
         vk = sk.get_verifying_key()
