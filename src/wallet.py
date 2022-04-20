@@ -31,7 +31,7 @@ class Wallet:
         # generate the addresses list,
         # joining the keypair as the 2nd element for ease of use
         for kp in kps:
-            self.addresses.append([Address.new(kp), kp])
+            self.create_wallet_address(kp)
         
         return self
 
