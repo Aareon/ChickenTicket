@@ -18,6 +18,7 @@ except ImportError:
     USING_UJSON = False
 
 
+@dataclass
 class TXVersion:
     ver1 = 0x1
     ver2 = 0x2
