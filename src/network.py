@@ -254,3 +254,20 @@ class P2PConnector:
     async def add_peer(self, addr: str, port: int):
         peer = Peer(addr, port)
         await self.pooler.add_peer(peer)
+
+
+if __name__ == "__main__":
+    # Testing shit, thanks @Dap
+
+    async def main():
+        def cb(*args):
+            print("called")
+
+        conn = P2PConnector("0.0.0.0", 42069, cb)
+        await conn.setup()
+
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(main())
+    finally:
+        loop.close()
