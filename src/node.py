@@ -3,22 +3,18 @@
 import json
 from pathlib import Path
 
+from config import Config
 from network.http import FlaskAppWrapper
 from wallet import Wallet
 
 SRC_PATH = Path(__file__).parent
 print(SRC_PATH)
 
+
 # API Endpoints
+
 def index():
-    return json.dumps({"yeet": "420"})
-
-
-def get_height():
-    return json.dumps({"height": "null"})
-
-
-# Node helpers
+    return json.dumps({"config": {"MAGIC": Config.MAGIC}})
 
 
 class HTTPNode:
@@ -37,7 +33,7 @@ class HTTPNode:
         # setup node endpoints
         self.app.add_endpoint(endpoint="/", endpoint_name="index", handler=index)
         self.app.add_endpoint(
-            endpoint="/api/getheight", endpoint_name="get_height", handler=get_height
+            endpoint="/api/getheight", endpoint_name="get_height", handler=self.get_height
         )
 
         # Load chain
@@ -46,6 +42,9 @@ class HTTPNode:
         if not chain_fp.exists():
             # generate from genesis
             hardcoded.generate_genesis()
+    
+    def get_height(self):
+        return json.dumps({"height": self.chain[-1]["idx"]})  # last block from in-memory chain
 
     def run(self):
         self.app.run()
