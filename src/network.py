@@ -19,9 +19,9 @@ from functools import partial
 from random import randrange
 from typing import Any, Callable, Mapping, Union
 
-# We intercept the traffic if it starts with these bytes
-MAGIC_BYTES = b"\xDapper@\x00"
-MAGIC_BYTES_LEN = len(MAGIC_BYTES)
+from config import Config
+
+MAGIC_BYTES_LEN = len(Config.MAGIC_BYTES)
 
 
 @dataclass
@@ -181,7 +181,7 @@ class ConnectionPooler:
                 await self.close_peer_connection(peer)
                 return
 
-            if data[:MAGIC_BYTES_LEN] == MAGIC_BYTES:
+            if data[:MAGIC_BYTES_LEN] == Config.MAGIC_BYTES:
                 await self._dispatch_internal(peer, data[MAGIC_BYTES_LEN:])
 
             else:
