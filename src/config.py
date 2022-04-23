@@ -8,3 +8,4 @@ from ecdsa import SECP256k1
 class Config:
     CURVE = SECP256k1
     DEFAULT_WALLET_FP = Path(__file__).parent.parent / "wallet.der"
+    MAGIC = b"\xDapper@\x00"
