@@ -4,7 +4,6 @@
 # If you aren't Aareon, go away
 
 __all__ = (
-    "MAGIC_BYTES",
     "MAGIC_BYTES_LEN",
     "Peer",
     "Connection",
