@@ -258,16 +258,22 @@ class P2PConnector:
 
 if __name__ == "__main__":
     # Testing shit, thanks @Dap
+    # Running this in WSL2 on port 42069, then connecting in VSCode
+    # on 42169 works!
 
     async def main():
         def cb(*args):
             print("called")
 
-        conn = P2PConnector("0.0.0.0", 42069, cb)
+        conn = P2PConnector("0.0.0.0", 42169, cb)
+        await conn.add_peer("127.0.0.1", 42069)
         await conn.setup()
+        
 
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(main())
+    except:
+        pass
     finally:
         loop.close()
