@@ -21,7 +21,7 @@ from typing import Any, Callable, Mapping, Union
 
 from config import Config
 
-MAGIC_BYTES_LEN = len(Config.MAGIC_BYTES)
+MAGIC_BYTES_LEN = len(Config.MAGIC)
 
 
 @dataclass
@@ -181,7 +181,7 @@ class ConnectionPooler:
                 await self.close_peer_connection(peer)
                 return
 
-            if data[:MAGIC_BYTES_LEN] == Config.MAGIC_BYTES:
+            if data[:MAGIC_BYTES_LEN] == Config.MAGIC:
                 await self._dispatch_internal(peer, data[MAGIC_BYTES_LEN:])
 
             else:
