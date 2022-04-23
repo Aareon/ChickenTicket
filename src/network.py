@@ -268,7 +268,6 @@ if __name__ == "__main__":
         conn = P2PConnector("0.0.0.0", 42169, cb)
         await conn.add_peer("127.0.0.1", 42069)
         await conn.setup()
-        
 
     loop = asyncio.get_event_loop()
     try:
