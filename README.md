@@ -8,27 +8,6 @@ I'm kind of rewriting things, so things may get weird. I'm doing so to make Chic
 Everything is broken down into finer components. Transactions, blocks, the node, all have a separate file dedicated to their respective logic.
 Most, if not all, of the core elements of the blockchain can be serialized into a string. For example:
 
-```
-{"block": {
-    "header": {
-        "idx": 0,  // height
-        "ver": 0,
-        "timestamp": 1650117616812176,
-        "merkle": "" // merkle root
-    },
-    "txs": [{
-        "idx": 0,
-        "ver": 0,
-        "timestamp": 1650117516812176,
-        "sender": "some address",
-        "recipient": "some address",
-        "amount": 1000,
-        "fee": 10,
-        "openf": "some data to include with transaction"
-    }]
-}
-```
-
 Simply convert any of the following objects (after instantiation) with `str(cls)`:
 
  - Transaction
@@ -86,14 +65,15 @@ Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
 
 ### Social
 
-- [Join us on Discord](https://discord.gg/d7Mxuc3Wn)
+- [Join us on Discord](https://discord.gg/a6UmtndUXy)
 - [Subscribe to our subreddit](https://reddit.com/r/ChickenTicket)
 
 ### Todos
  - MOAR TESTS
  - ~~Probably need to generate the genesis block, just saying.~~ Done
- - Peers and Nodes (including websocket handling, etc. Should be fun 😅)
+ - Peers and Nodes (including websocket handling, etc. Should be fun 😅) (Partially done)
  - Sending and receiving transactions
+ - DSL for sub-contracts
  - Mining
  - Clean up!
  - Graphical Wallet
