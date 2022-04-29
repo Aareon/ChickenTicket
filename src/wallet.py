@@ -5,6 +5,10 @@ from keys import KeyPair
 from address import Address
 
 
+class WalletException(Exception):
+    """Base exception for wallet errors"""
+
+
 class Wallet:
     aliases: List
     addresses: List
@@ -19,8 +23,11 @@ class Wallet:
 
         TODO add encryption"""
         privs = []
-        with open(path, "r+") as f:
-            privs = f.read().splitlines()
+        try:
+            with open(path, "r+") as f:
+                privs = f.read().splitlines()
+        except FileNotFoundError as exc:
+            raise WalletException(str(exc))
         
         # using loaded priv keys, generate addresses associated with them
         # this requires recreating the KeyPair first
@@ -50,6 +57,13 @@ class Wallet:
         address = Address.new(kp)
         self.addresses.append([address, kp])
         return address
+    
+    def create_new(self, kp: KeyPair = None):
+        if kp is None:
+            kp = KeyPair.new()
+        #
+        address = self.create_wallet_address(kp)
+        return self
 
 
 if __name__ == "__main__":
