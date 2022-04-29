@@ -52,34 +52,22 @@ class Block:
     timestamp: int
     header: BlockHeader
 
-    def __init__(
-        self,
-        idx: int,
-        last_block,
-        nonce: int,
-        previous_proof: str = None,
-        merkle_root: str = None,
-        timestamp: int = None,
-        reward: Decimal = None,
-        transactions: List[str] = [],
-        version: int = 0x0,
-    ):
-        self.version = version
-        self.idx = idx
-        self.last_block = last_block
-        self.nonce = nonce
-        self.timestamp = timestamp or get_timestamp()
+    def __init__(self, **kwargs):
+        self.version = kwargs.get("ver") or kwargs.get("version")
+        self.idx = kwargs.get("idx")
+        self.last_block = kwargs.get("last_block")
+        self.nonce = kwargs.get("nonce")
+        self.timestamp = kwargs.get("timestamp") or get_timestamp()
         self.tree = MerkleTree()  # sha256 hashed merkle tree
+        self.previous_proof = kwargs.get("previous_proof")
+        self.merkle_root = kwargs.get("merkle_root")
         self.proof = None
-        self.previous_proof = previous_proof
-        self.merkle_root = merkle_root
         self.difficulty = self.calculate_difficulty()
         self.reward = None
+        self.transactions = kwargs.get("transactions") or kwargs.get("txs") or []
 
-        if hasattr(last_block, "proof"):
+        if hasattr(self.last_block, "proof"):
             self.previous_proof = last_block.proof
-
-        self.transactions = transactions
 
     def to_dict(self):
         return {
@@ -87,7 +75,9 @@ class Block:
             "header": self.header.to_dict(),
             "last_block": self.last_block,
             "reward": self.reward,
-            "txs": [tx.to_dict() for tx in self.transactions],
+            "txs": [tx.to_dict() for tx in self.transactions]
+            if self.transactions
+            else None,
             "hash": self.proof,
             "difficulty": self.difficulty,
         }
@@ -110,7 +100,7 @@ class Block:
         )
 
     def add_transaction(self, tx):
-        if tx not in self.transactions:
+        if self.transactions is not None and tx not in self.transactions:
             self.transactions.append(tx)
             self.tree.add_leaf(tx.json(), True)
 
