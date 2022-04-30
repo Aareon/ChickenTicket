@@ -26,6 +26,7 @@ if not wallet_fp.exists():
         kp = KeyPair.new()
         WALLET = Wallet()
         WALLET.create_wallet_address(kp)
+        WALLET.save_to_der(wallet_fp / "wallet.der")
     else:
         WALLET = Wallet.load_from_der(wallet_fp / "wallet.der")
 
@@ -33,11 +34,7 @@ else:
     print("Wallet exists. Loading...")
     WALLET = Wallet().load_from_der(wallet_fp)
 
-AVAILABLE = 100
-
-send_layout = [
-    # pop-up to create new wallet
-]
+AVAILABLE = 100  # testing
 
 # fmt: off
 layout = [
