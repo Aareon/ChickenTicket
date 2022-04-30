@@ -1,4 +1,7 @@
 # ChickenTicket simple GUI based on PySimpleGUI
+import sys
+import threading
+import time
 from decimal import Decimal
 from pathlib import Path
 
@@ -7,14 +10,21 @@ import PySimpleGUI as sg
 import qrcode
 
 from config import Config
+from httpnode import HTTPNode
 from keys import KeyPair
 from wallet import Wallet
+
+WALLET = None
+AVAILABLE = 0
+PENDING = 0
+
+node = HTTPNode(config=Config)
+node.setup()
 
 images_dir = Path(__file__).parent.parent / "images"
 print(f"Images dir: {images_dir}")
 
 # attempt to load wallet file from default location
-WALLET = None
 
 wallet_fp = Config.DEFAULT_WALLET_FP
 
@@ -34,7 +44,7 @@ else:
     print("Wallet exists. Loading...")
     WALLET = Wallet().load_from_der(wallet_fp)
 
-AVAILABLE = 100  # testing
+AVAILABLE = 0
 
 # fmt: off
 layout = [
@@ -50,72 +60,87 @@ layout = [
 ]
 # fmt: on
 
-window = sg.Window("ChickenTicket simple GUI", layout)
-while True:
-    event, values = window.read()
-    if event == sg.WIN_CLOSED:
-        break
-    if event == "-send-":
-        # fmt: off
-        send_win = sg.Window("Send", [
-            [sg.Text("Send", font="Arial 12 bold")],
-            [sg.Input(key="-input-"), sg.Image(str(images_dir / "red.png"), size=(20, 20), key='-status-')],
-            [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
-            [sg.Button("Cancel", key="-cancel-"), sg.HSeparator(), sg.Button("Check", key="-check-"), sg.Button("Send", key="-send-")]
-        ])
-        # fmt: on
-        while True:
-            event, vals = send_win.read()
-            if event == "-cancel-" or event == sg.WIN_CLOSED:
-                break
-            if event == "-check-":
-                if Decimal(vals["-input-"]) <= Decimal(0):
-                    send_win["-status-"].Update(
-                        str(images_dir / "orange.png"), size=(20, 20)
-                    )
-                elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
-                    send_win["-status-"].Update(
-                        str(images_dir / "red.png"), size=(20, 20)
-                    )
-                elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                    send_win["-status-"].Update(
-                        str(images_dir / "green.png"), size=(20, 20)
-                    )
-            if event == "-send-":
-                if Decimal(vals["-input-"]) <= Decimal(0):
-                    send_win["-status-"].Update(
-                        str(images_dir / "orange.png"), size=(20, 20)
-                    )
-                elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
-                    send_win["-status-"].Update(
-                        str(images_dir / "red.png"), size=(20, 20)
-                    )
-                elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                    send_win["-status-"].Update(
-                        str(images_dir / "green.png"), size=(20, 20)
-                    )
+
+def run():
+    window = sg.Window("ChickenTicket simple GUI", layout)
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:
+            break
+        if event == "-send-":
+            # fmt: off
+            send_win = sg.Window("Send", [
+                [sg.Text("Send", font="Arial 12 bold")],
+                [sg.Input(key="-input-"), sg.Image(str(images_dir / "red.png"), size=(20, 20), key='-status-')],
+                [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
+                [sg.Button("Cancel", key="-cancel-"), sg.HSeparator(), sg.Button("Check", key="-check-"), sg.Button("Send", key="-send-")]
+            ])
+            # fmt: on
+            while True:
+                event, vals = send_win.read()
+                if event == "-cancel-" or event == sg.WIN_CLOSED:
                     break
+                if event == "-check-":
+                    if Decimal(vals["-input-"]) <= Decimal(0):
+                        send_win["-status-"].Update(
+                            str(images_dir / "orange.png"), size=(20, 20)
+                        )
+                    elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
+                        send_win["-status-"].Update(
+                            str(images_dir / "red.png"), size=(20, 20)
+                        )
+                    elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
+                        send_win["-status-"].Update(
+                            str(images_dir / "green.png"), size=(20, 20)
+                        )
+                if event == "-send-":
+                    if Decimal(vals["-input-"]) <= Decimal(0):
+                        send_win["-status-"].Update(
+                            str(images_dir / "orange.png"), size=(20, 20)
+                        )
+                    elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
+                        send_win["-status-"].Update(
+                            str(images_dir / "red.png"), size=(20, 20)
+                        )
+                    elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
+                        send_win["-status-"].Update(
+                            str(images_dir / "green.png"), size=(20, 20)
+                        )
+                        break
 
-        send_win.close()
+            send_win.close()
 
-    if event == "-receive-":
-        # Receive button pressed, show address popup
-        address = WALLET.addresses[0][0]
-        qr = qrcode.make(address, box_size=6)
-        qr.save(images_dir / "addressqr.png")
-        # fmt: off
-        rx_win = sg.Window("Receive", [
-            [sg.Image(str(images_dir / "addressqr.png"))],
-            [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
-            [sg.Button("OK", key='-ok-')]
-        ])
-        # fmt: on
-        while True:
-            event, _ = rx_win.read()
-            if event == "-ok-" or event == sg.WIN_CLOSED:
-                break
-            if event == "-copy-":
-                clip.copy(str(address))
-        rx_win.close()
+        if event == "-receive-":
+            # Receive button pressed, show address popup
+            address = WALLET.addresses[0][0]
+            qr = qrcode.make(address, box_size=6)
+            qr.save(images_dir / "addressqr.png")
+            # fmt: off
+            rx_win = sg.Window("Receive", [
+                [sg.Image(str(images_dir / "addressqr.png"))],
+                [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
+                [sg.Button("OK", key='-ok-')]
+            ])
+            # fmt: on
+            while True:
+                event, _ = rx_win.read()
+                if event == "-ok-" or event == sg.WIN_CLOSED:
+                    break
+                if event == "-copy-":
+                    clip.copy(str(address))
+            rx_win.close()
 
-window.close()
+    print("Closing!")
+    window.close()
+    sys.exit(0)
+
+    node_thread.join()
+
+
+if __name__ == "__main__":
+    node_thread = threading.Thread(target=lambda: node.run(), daemon=True)
+
+    window_thread = threading.Thread(target=lambda: run())
+
+    window_thread.start()
+    node_thread.start()
