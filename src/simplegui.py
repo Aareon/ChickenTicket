@@ -139,7 +139,7 @@ def run():
             window.close()
 
             print("Creating new wallet.der ...")
-            kp = KeyPair.new()
+            kp = KeyPair.from_seed(phrase)
             WALLET = Wallet()
             WALLET.create_wallet_address(kp)
             WALLET.save_to_der(wallet_fp / "wallet.der")
@@ -155,7 +155,7 @@ def run():
     layout = [
         # main layout
         [sg.Text("Wallet", font="Arial 14 bold"), sg.Text("(Out of sync)", text_color="#f00", key='-sync-')],
-        [sg.Text("Balances", font="Arial 12 bold")],
+        [sg.Text("Balances", font="Arial 12 bold"), sg.HSeparator(), sg.Text("Recent Transactions", font=("Arial 12 bold"))],
         [sg.Text("Available:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-available-')],
         [sg.Text("Pending:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-pending-')],
         [sg.HSeparator()],
@@ -183,39 +183,52 @@ def run():
                 if event == "-cancel-" or event == sg.WIN_CLOSED:
                     break
                 if event == "-check-":
-                    if Decimal(vals["-input-"]) <= Decimal(0):
-                        send_win["-status-"].Update(
-                            str(images_dir / "orange.png"), size=(20, 20)
-                        )
-                    elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
+                    try:
+                        if Decimal(vals["-input-"]) <= Decimal(0):
+                            send_win["-status-"].Update(
+                                str(images_dir / "orange.png"), size=(20, 20)
+                            )
+                        elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
+                            send_win["-status-"].Update(
+                                str(images_dir / "red.png"), size=(20, 20)
+                            )
+                        elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
+                            send_win["-status-"].Update(
+                                str(images_dir / "green.png"), size=(20, 20)
+                            )
+                    except:
                         send_win["-status-"].Update(
                             str(images_dir / "red.png"), size=(20, 20)
-                        )
-                    elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                        send_win["-status-"].Update(
-                            str(images_dir / "green.png"), size=(20, 20)
                         )
                 if event == "-send-":
-                    if Decimal(vals["-input-"]) <= Decimal(0):
-                        send_win["-status-"].Update(
-                            str(images_dir / "orange.png"), size=(20, 20)
-                        )
-                    elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
+                    try:
+                        if Decimal(vals["-input-"]) <= Decimal(0):
+                            send_win["-status-"].Update(
+                                str(images_dir / "orange.png"), size=(20, 20)
+                            )
+                        elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
+                            send_win["-status-"].Update(
+                                str(images_dir / "red.png"), size=(20, 20)
+                            )
+                        elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
+                            send_win["-status-"].Update(
+                                str(images_dir / "green.png"), size=(20, 20)
+                            )
+                            break
+                    except:
                         send_win["-status-"].Update(
                             str(images_dir / "red.png"), size=(20, 20)
                         )
-                    elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                        send_win["-status-"].Update(
-                            str(images_dir / "green.png"), size=(20, 20)
-                        )
-                        break
 
             send_win.close()
 
         if event == "-receive-":
             # Receive button pressed, show address popup
+            window[event].update(disabled=True)
             address = WALLET.addresses[0][0]
             qr = qrcode.make(address, box_size=6)
+            if not images_dir.exists():
+                images_dir.mkdir(parents=True)
             qr.save(images_dir / "addressqr.png")
             # fmt: off
             rx_win = sg.Window("Receive", [
@@ -227,6 +240,7 @@ def run():
             while True:
                 event, _ = rx_win.read()
                 if event == "-ok-" or event == sg.WIN_CLOSED:
+                    window["-receive-"].update(disabled=False)
                     break
                 if event == "-copy-":
                     clip.copy(str(address))
