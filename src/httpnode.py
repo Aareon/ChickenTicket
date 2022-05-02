@@ -85,7 +85,14 @@ class FlaskAppWrapper:
 
 
 def index(node):
-    return json.dumps({"config": {"MAGIC": node.config.MAGIC.decode()}})
+    return json.dumps(
+        {
+            "config": {
+                "MAGIC": node.config.MAGIC.decode(),
+                "TESTNET": bool(node.config.TESTNET),
+            }
+        }
+    )
 
 
 class HTTPNode:
