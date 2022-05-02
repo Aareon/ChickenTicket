@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 
 import ecdsa
+from ecdsa.util import randrange_from_seed__trytryagain
 
-CURVE = ecdsa.SECP256k1
+from config import Config
+
+CURVE = Config.CURVE
 
 
 @dataclass
@@ -45,10 +48,20 @@ class KeyPair:
         vk = sk.get_verifying_key()
         pub = PubKey(vk.to_string())
         return cls(pub, priv)
-    
+
     @classmethod
     def from_privkey_str(cls, priv):
         sk = ecdsa.SigningKey.from_string(bytes.fromhex(priv), curve=CURVE)
+        priv = PrivKey(sk.to_string())
+
+        vk = sk.get_verifying_key()
+        pub = PubKey(vk.to_string())
+        return cls(pub, priv)
+
+    @classmethod
+    def from_seed(cls, seed):
+        secexp = randrange_from_seed__trytryagain(seed, CURVE.order)
+        sk = ecdsa.SigningKey.from_secret_exponent(secexp, curve=CURVE)
         priv = PrivKey(sk.to_string())
 
         vk = sk.get_verifying_key()
