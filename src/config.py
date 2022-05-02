@@ -8,4 +8,4 @@ from ecdsa import SECP256k1
 class Config:
     CURVE = SECP256k1
     DEFAULT_WALLET_FP = Path(__file__).parent.parent / "wallet.der"
-    MAGIC = b"\xDapper@\x00"  # We intercept the traffic if it starts with these bytes
+    MAGIC = "\xDapper\x00".encode("utf-8")  # We intercept the traffic if it starts with these bytes
