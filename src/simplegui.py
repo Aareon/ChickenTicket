@@ -19,9 +19,6 @@ WALLET = None
 AVAILABLE = 0
 PENDING = 0
 
-node = HTTPNode(config=Config)
-node.setup()
-
 images_dir = Path(__file__).parent.parent / "images"
 print(f"Images dir: {images_dir}")
 
@@ -32,6 +29,8 @@ SRC_PATH = Path(__file__).parent
 def run():
     wallet_fp = Config.DEFAULT_WALLET_FP
 
+    # Select directory for wallet.
+    # Create and save if not exists
     if not wallet_fp.exists():
 
         wallet_fp = Path(sg.popup_get_folder("Select wallet folder"))
@@ -151,9 +150,15 @@ def run():
         print("Wallet exists in default location. Loading ...")
         WALLET = Wallet().load_from_der(wallet_fp)
 
+    node = HTTPNode(wallet=WALLET, config=Config)
+    node.setup()
+    node_thread = threading.Thread(
+        target=lambda: node.run(), daemon=True
+    )  # flask thread
+    node_thread.start()
+
     # fmt: off
-    layout = [
-        # main layout
+    layout = [  # main layout
         [sg.Text("Wallet", font="Arial 14 bold"), sg.Text("(Out of sync)", text_color="#f00", key='-sync-')],
         [sg.Text("Balances", font="Arial 12 bold"), sg.HSeparator(), sg.Text("Recent Transactions", font=("Arial 12 bold"))],
         [sg.Text("Available:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-available-')],
@@ -164,20 +169,27 @@ def run():
         [sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text("0 connections", key='-connections-')]
     ]
     # fmt: on
+
+    # Main wallet window
     window = sg.Window("ChickenTicket simple GUI", layout)
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED:
             break
-        if event == "-send-":
+        if event == "-send-":  # Send popup window
+
             # fmt: off
-            send_win = sg.Window("Send", [
+            send_win = sg.Window("Send", [  # send window layout
                 [sg.Text("Send", font="Arial 12 bold")],
                 [sg.Input(key="-input-"), sg.Image(str(images_dir / "red.png"), size=(20, 20), key='-status-')],
+                [sg.Text("Fee: 0.0 CHKN", key="-fee-")],  # estimated transaction fee
+                [sg.HSeparator()],
                 [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
+                [sg.Text("Pending:"), sg.Text(f"{PENDING} CHKN", font="Arial 10 bold")],
                 [sg.Button("Cancel", key="-cancel-"), sg.HSeparator(), sg.Button("Check", key="-check-"), sg.Button("Send", key="-send-")]
             ])
             # fmt: on
+
             while True:
                 event, vals = send_win.read()
                 if event == "-cancel-" or event == sg.WIN_CLOSED:
@@ -222,7 +234,8 @@ def run():
 
             send_win.close()
 
-        if event == "-receive-":
+        if event == "-receive-":  # Receive popup window
+            # Receive popup window
             # Receive button pressed, show address popup
             window[event].update(disabled=True)
             address = WALLET.addresses[0][0]
@@ -250,13 +263,9 @@ def run():
     window.close()
     sys.exit(0)
 
-    node_thread.join()
-
 
 if __name__ == "__main__":
-    node_thread = threading.Thread(target=lambda: node.run(), daemon=True)
 
-    window_thread = threading.Thread(target=lambda: run())
+    window_thread = threading.Thread(target=lambda: run())  # PySimpleGUI
 
     window_thread.start()
-    node_thread.start()
