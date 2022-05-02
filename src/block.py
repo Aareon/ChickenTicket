@@ -141,6 +141,13 @@ class Block:
         self.proof = chicken_hash(json.dumps(data).encode()).hex()
         return self.proof
 
+    @classmethod
+    def from_json(cls, data):
+        try:
+            return cls(**json.loads(data))
+        except:
+            raise
+
     def validate(self):
         # TODO
         # check height
