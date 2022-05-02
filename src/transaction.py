@@ -5,6 +5,7 @@ from typing import List
 
 import ecdsa
 
+from address import Address
 from crypto.chicken import chicken_hash
 from keys import CURVE, KeyPair
 
@@ -39,14 +40,14 @@ class Input:
 
 @dataclass
 class Output:
-    recipient: str  # address the amount is to be sent to
+    recipient: Address  # address the amount is to be sent to
     amount: Decimal
 
     def __str__(self):
         return json.dumps(self.to_dict(), sort_keys=True)
 
     def to_dict(self):
-        return {"recipient": self.recipient, "amount": str(self.amount)}
+        return {"recipient": str(self.recipient), "amount": str(self.amount)}
 
 
 class Transaction:
