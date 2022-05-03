@@ -1,282 +1,275 @@
-# ChickenTicket simple GUI based on PySimpleGUI
-import sys
-import threading
-import time
-from decimal import Decimal
+import json
+import random as rand
 from pathlib import Path
-from random import randint
+from typing import List
 
-import pyperclip as clip
-import PySimpleGUI as sg
-import qrcode
+import requests as r
+from flask import Flask, Response, jsonify, make_response, request, session
 
+import hardcoded
+from block import Block
 from config import Config
-from httpnode import HTTPNode
-from keys import KeyPair
-from wallet import Wallet
 
-WALLET = None
-AVAILABLE = 0
-PENDING = 0
-
-SRC_DIR = Path(__file__).parent
-IMAGES_DIR = SRC_DIR.parent / "images"
-PEERS_LIST = SRC_DIR.parent / "peerslist.txt"
-print(f"Images dir: {IMAGES_DIR}")
-
-# attempt to load wallet file from default location
+SRC_PATH = Path(__file__).parent
 
 
-def run():
-    wallet_fp = Config.DEFAULT_WALLET_FP
+class EndpointAction:
+    def __init__(self, action, mimetype="application/json"):
+        self.action = action
+        self.response = Response(status=200, headers={}, mimetype=mimetype)
 
-    # Select directory for wallet.
-    # Create and save if not exists
-    if not wallet_fp.exists():
-
-        wallet_fp = Path(sg.popup_get_folder("Select wallet folder"))
-
-        if not (wallet_fp / "wallet.der").exists():
-
-            # generate a new wallet
-            # get 12 random words from mnemonics.txt
-            def generate_wordlist():
-                with open(SRC_DIR / "mnemonics.txt", "r") as f:
-                    words = f.read().splitlines()
-                    word_list = []
-                    for _ in range(0, 12):
-                        r = randint(0, len(words))
-                        while words[r] in word_list:
-                            r = randint(0, len(words))
-                        else:
-                            word_list.append(words[r])
-                    return word_list
-
-            # show recovery phrase dialog
-            def phrase_layout():
-                # fmt: off
-                return [
-                    [sg.Text("Recovery Phrase", font=("Arial 12 bold"))],
-                    [sg.Text("Write the following words down somewhere safe!\nThis will be used to recover your wallet if you ever lock yourself out or lose the file.")],
-                    [sg.Multiline(no_scrollbar=True, size=(30, 3), disabled=True, key='-words-')],
-                    [sg.Button("Refresh", key="-refresh-"), sg.HSeparator(), sg.Button("Next", key="-next-")]
-                ]
-                # fmt: on
-
-            word_win = sg.Window(
-                "ChickenTicket Create Wallet", phrase_layout()
-            ).finalize()
-            word_list = generate_wordlist()
-            word_win["-words-"].update(" ".join(w for w in word_list))
-            while True:
-                event, values = word_win.read()
-                if event == sg.WIN_CLOSED:
-                    if (
-                        sg.popup("Are you sure you want to exit?", button_type=1)
-                        == "Yes"
-                    ):
-                        sys.exit(1)
-                    else:
-                        word_win = sg.Window(
-                            "ChickenTicket Create Wallet", phrase_layout()
-                        ).finalize()
-                        word_list = generate_wordlist()
-                        word_win["-words-"].update(" ".join(w for w in word_list))
-                elif event == "-refresh-":
-                    word_list = generate_wordlist()
-                    word_win["-words-"].update(" ".join(w for w in word_list))
-                elif event == "-next-":
-                    break
-            word_win.close()
-
-            # recovery phrase confirm dialog
-            def confirm_phrase_layout():
-                words = word_list
-
-                rows = [[], [], []]
-                x = 0
-                for i in range(3):
-                    for j in range(4):
-                        n = randint(0, len(words) - 1)
-                        rows[i].append(sg.Button(words.pop(n), key=f"-word{x}-"))
-                        x += 1
-
-                # fmt: off
-                return [
-                    [sg.Text("Confirm your recovery phrase", font=("Arial 10 bold"))],
-                    [sg.Multiline(no_scrollbar=True, disabled=True, size=(30, 3), key="-words-")],
-                    rows,
-                    [sg.HSeparator()],
-                    [sg.Button("Reset", key="-reset-"), sg.HSeparator(), sg.Button("Confirm", disabled=True, key="-confirm-")]
-                ]
-                # fmt: on
-
-            phrase = " ".join(word_list)
-            words = ""
-            window = sg.Window("Confirm Recovery Phrase", confirm_phrase_layout())
-            while True:
-                event, values = window.read()
-                if event == sg.WIN_CLOSED:
-                    if (
-                        sg.popup("Are you sure you want to exit?", button_type=1)
-                        == "Yes"
-                    ):
-                        sys.exit(1)
-                elif "-word" in event and event != "-words-":
-                    words += f"{window[event].get_text()} "
-                    window["-words-"].update(f"{words}")
-                    window[event].update(disabled=True)
-                    if words.rstrip() == phrase:
-                        window["-confirm-"].update(disabled=False)
-                elif event == "-reset-":
-                    words = ""
-                    window["-words-"].update("")
-                    for i in range(0, 12):
-                        window[f"-word{i}-"].update(disabled=False)
-                elif event == "-confirm-":
-                    # phrase entered correctly
-                    break
-            window.close()
-
-            print("Creating new wallet.der ...")
-            kp = KeyPair.from_seed(phrase)
-            WALLET = Wallet()
-            WALLET.create_wallet_address(kp)
-            WALLET.save_to_der(wallet_fp / "wallet.der")
-        else:
-            print("Loading wallet.der from user location ...")
-            WALLET = Wallet().load_from_der(wallet_fp / "wallet.der")
-
-    else:
-        print("Wallet exists in default location. Loading ...")
-        WALLET = Wallet().load_from_der(wallet_fp)
-
-    with open(PEERS_LIST) as f:
-        peers_list = f.readlines()
-    node = HTTPNode(wallet=WALLET, config=Config, peers_list=peers_list)
-    node.setup()
-    node_thread = threading.Thread(
-        target=lambda: node.run(), daemon=True
-    )  # flask thread
-    node_thread.start()
-
-    # fmt: off
-    layout = [  # main layout
-        [sg.Text("Wallet", font="Arial 14 bold"), sg.Text("(Out of sync)", text_color="#f00", key='-sync-')],
-        [sg.Text("Balances", font="Arial 12 bold"), sg.Push(), sg.Text("Recent Transactions", font=("Arial 12 bold"))],
-        [sg.Text("Available:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-available-')],
-        [sg.Text("Pending:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-pending-')],
-        [sg.HSeparator()],
-        [sg.Text("Total:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-total-')],
-        [sg.Button("Send", key="-send-"), sg.VSeperator(), sg.Button("Receive", key="-receive-"), sg.VSeperator(), sg.Button("Settings", key='-settings-')],
-        [sg.Text("Height: 0", font="Arial 9"), sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text("0 connections", key='-connections-')]
-    ]
-    # fmt: on
-
-    # Main wallet window
-    window = sg.Window("ChickenTicket simple GUI", layout)
-
-    def connections_changed(conns: int):
-        """Callback to use when node connections changes
-
-        Updates the connections label in main layout"""
-        window["-connections-"].Update(f"{conns} connections")
-
-    node.connect_cb = connections_changed
-    while True:
-        event, values = window.read()
-        if event == sg.WIN_CLOSED:
-            break
-        if event == "-send-":  # Send popup window
-
-            # fmt: off
-            send_win = sg.Window("Send", [  # send window layout
-                [sg.Text("Send", font="Arial 12 bold")],
-                [sg.Input(key="-input-"), sg.Image(str(IMAGES_DIR / "red.png"), size=(20, 20), key='-status-')],
-                [sg.Text("Fee: 0.0 CHKN", key="-fee-")],  # estimated transaction fee
-                [sg.HSeparator()],
-                [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
-                [sg.Text("Pending:"), sg.Text(f"{PENDING} CHKN", font="Arial 10 bold")],
-                [sg.Button("Cancel", key="-cancel-"), sg.HSeparator(), sg.Button("Check", key="-check-"), sg.Button("Send", key="-send-")]
-            ])
-            # fmt: on
-
-            while True:  # send window loop
-                event, vals = send_win.read()
-                if event == "-cancel-" or event == sg.WIN_CLOSED:
-                    break
-                if event == "-check-":
-                    try:
-                        if Decimal(vals["-input-"]) <= Decimal(0):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "orange.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "red.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "green.png"), size=(20, 20)
-                            )
-                    except:
-                        send_win["-status-"].Update(
-                            str(IMAGES_DIR / "red.png"), size=(20, 20)
-                        )
-                if event == "-send-":
-                    try:
-                        if Decimal(vals["-input-"]) <= Decimal(0):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "orange.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "red.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "green.png"), size=(20, 20)
-                            )
-                            break
-                    except:
-                        send_win["-status-"].Update(
-                            str(IMAGES_DIR / "red.png"), size=(20, 20)
-                        )
-            send_win.close()
-
-        if event == "-receive-":  # Receive popup window
-            # Receive button pressed, show address popup
-            window[event].update(disabled=True)
-            address = WALLET.addresses[0][0]
-            qr = qrcode.make(address, box_size=6)
-            if not IMAGES_DIR.exists():
-                images_dir.mkdir(parents=True)
-            qr.save(IMAGES_DIR / "addressqr.png")
-            # fmt: off
-
-            rx_win = sg.Window("Receive", [  # receive window layout
-                [sg.Image(str(images_dir / "addressqr.png"))],
-                [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
-                [sg.Button("OK", key='-ok-')]
-            ])
-            # fmt: on
-
-            while True:  # receive window loop
-                event, _ = rx_win.read()
-                if event == "-ok-" or event == sg.WIN_CLOSED:
-                    window["-receive-"].update(disabled=False)
-                    break
-                if event == "-copy-":
-                    clip.copy(str(address))
-            rx_win.close()
-
-    print("Closing!")
-    window.close()
-    sys.exit(0)
+    def __call__(self, *args):
+        action_result = self.action()
+        self.response.data = action_result
+        return self.response
 
 
-if __name__ == "__main__":
+class StatusError(Exception):
+    """Exception for when request returns non-200 status"""
 
-    window_thread = threading.Thread(target=lambda: run())  # PySimpleGUI
 
-    window_thread.start()
+class HTTPPeer:
+    def __init___(self, host, port):
+        self.host = host
+        self.port = port
+
+        self.connected = False
+
+    def send_request(self, endpoint, **kwargs):
+        try:
+            query = None
+            if len(kwargs) > 0:
+                query = "?"
+                for k, v in kwargs.items():
+                    query += f"{k}={v},"
+                query = query[:-1]  # remove trailing comma
+            resp = r.get(
+                f"http://{self.host}:{self.port}/api/{endpoint}{query if query is not None else ''}"
+            )
+            if resp.status_code != 200:
+                raise StatusError
+            else:
+                return resp.json()
+        except:
+            raise
+
+    def connect(self, listen):
+        try:
+            resp = self.send_request("connect", listen=listen)
+            self.connected = True
+        except Exception as e:
+            self.connected = False
+            print("Failed to connect:", type(e), str(e))
+        finally:
+            return self.connected
+
+    def get_height(self):
+        """Get the current height"""
+        return self.send_request("get_height")
+
+    def get_block(self, height):
+        return self.send_request("get_block", h=height)
+
+
+class FlaskAppWrapper:
+    def __init__(self, host, port, name=__name__):
+        self.host = host
+        self.port = port
+
+        self._name = name
+        self.app = Flask(self._name)
+
+    def run(self, **kwargs):
+        self.app.run(host=self.host, port=self.port, **kwargs)
+
+    def add_endpoint(self, endpoint=None, endpoint_name=None, handler=None):
+        self.app.add_url_rule(endpoint, endpoint_name, EndpointAction(handler))
+
+
+def index(node):
+    return json.dumps(
+        {
+            "config": {
+                "MAGIC": node.config.MAGIC.decode(),
+                "TESTNET": bool(node.config.TESTNET),
+            }
+        }
+    )
+
+
+class HTTPNode:
+    def __init__(
+        self,
+        host="0.0.0.0",
+        port=42169,
+        peers_list: List = [],
+        wallet=None,
+        config=Config,
+    ):
+        self.host = host
+        self.port = port
+        self.peers_list = peers_list
+        self.wallet = wallet
+        self.config = config
+
+        self.app = FlaskAppWrapper(self.host, self.port)
+
+        self.chain: List[Block] = []
+        self.peers: List[HTTPPeer] = []
+        self.is_synced = False  # run `node.sync_chain()`
+        self.synced_height = 0  # current height that has been synced
+
+        self.connect_cb = None  # callback to call when connections have changed
+
+    def setup(self):
+        # setup node endpoints
+        self.app.add_endpoint(
+            endpoint="/", endpoint_name="index", handler=lambda: index(self)
+        )
+        self.app.add_endpoint(
+            endpoint="/api/get_height",
+            endpoint_name="get_height",
+            handler=self.get_height,
+        )
+        self.app.add_endpoint(
+            endpoint="/api/get_block",
+            endpoint_name="get_block",
+            handler=self.get_block,
+        )
+        self.app.add_endpoint(
+            endpoint="/api/connect",
+            endpoint_name="connect",
+            handler=self.connect,
+        )
+
+        # prepare peers list and try to connect
+        # remove peers that are invalid
+        for i, p in enumerate(self.peers_list):
+            host, port = p.rstrip().split(":")
+
+            if (host, int(port)) == (self.host, self.port):
+                # if this peer is this node
+                continue
+
+            print(host, port)
+            print(f"Attempting connection to {host}:{port}")
+            p = HTTPPeer()
+            p.host, p.port = host, int(port)
+
+            try:
+                connected = p.connect(self.port)
+                if connected:
+                    self.peers.append(p)
+                    if self.connected_cb is not None:
+                        self.connected_cb(len(self.peers))
+                    print(f"Connected to {host}:{port}")
+            except Exception as e:
+                print(type(e), str(e))
+                print(f"Failed to connect to peer {host}:{port}")
+
+        # Load chain
+        chain_fp = SRC_PATH.parent / "chain/blockchain.json"
+        print("Loading blockchain.json")
+        if not chain_fp.exists():
+            # create chain if it doesn't exist
+
+            # check with peers first to find the most commonly accepted genesis and start from there
+            if len(self.peers) > 0:
+                self.sync_chain()
+            else:
+                # generate from genesis
+                tx = hardcoded.generate_genesis_tx(self.wallet)
+                block = hardcoded.generate_genesis_block(tx)
+                self.chain.append(block)
+
+        return self
+
+    def connect(self):
+        host, port = request.remote_addr, request.args.get("listen")
+        try:
+            p = HTTPPeer()
+            p.host, p.port = host, int(port)
+            if p in self.peers:
+                return json.dumps({"connected": "already"})
+            connected = True
+        except Exception as e:
+            print(f"{request.remote_addr} failed to connect -", type(e), str(e))
+            connected = False
+        return json.dumps({"connected": connected})
+
+    def get_height(self):
+        """Endpoint `get_height`"""
+        return json.dumps(
+            {"height": self.synced_height}
+        )  # last block from in-memory chain
+
+    def get_block(self):
+        try:
+            h = int(request.args.get("h"))
+            print(f"Getting block at height {h}")
+            print(f"Current height: {len(self.chain) - 1}")
+            print(self.chain)
+            return json.dumps(self.chain[h].json())
+        except Exception as e:
+            print("Failed to send get_block", type(e), str(e))
+            return make_response(status_code=400)
+        if h > self.synced_height:
+            return json.dumps({"block": None})
+
+    def choose_peers_at_height(self, height):
+        """Choose peers that agree on a block at given height"""
+        # get block proof at (h) from peers and compare
+        print(f"CHOOSE: {height}")
+
+        proofs = []
+        for p in self.peers:
+            block = json.loads(p.get_block(height))
+            print("GOT", block)
+            proofs.append([json.loads(p.get_block(height))["hash"], p])
+
+        # itemize count of unique block proofs at height (x)
+        proof_count = {}
+        for p, c in proofs:
+            if proof_count.get(p) is not None:
+                proof_count[p]["peers"].append(c)
+                proof_count[p]["count"] += 1
+            else:
+                proof_count[p] = {"count": 1, "peers": [c]}
+
+        return proof_count
+
+    def sync_chain(self):
+        # using peers, update chain
+        synced = False
+
+        while True:
+            # get current height from random peer (x)
+            # get block proof at (x) from chosen peer
+
+            p = rand.choice(self.peers)
+            height = p.get_height()["height"]  # GET peer `get_height`
+            print(f"SYNC: getting height {height}")
+
+            trusted_peers = self.choose_peers_at_height(height)
+
+            # choose chain from peer(s) with most common block proof
+            chosen = None
+            for p in trusted_peers:
+                print(p)
+                if chosen is None:
+                    chosen = p
+                elif p["count"] > chosen:
+                    chosen = p
+            
+            print(chosen)
+            # iterate over peers and gather chain
+            while not synced:
+                p = rand.choice(chosen["peers"])
+                block_json = p.get_block(self.synced_height + 1)
+
+                # validate block
+                block = Block.from_json()
+                break
+
+    def run(self):
+        self.app.run(use_reloader=False, threaded=True)
