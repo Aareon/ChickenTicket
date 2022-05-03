@@ -186,6 +186,7 @@ class HTTPNode:
 
     def connect(self):
         host, port = request.remote_addr, request.args.get("listen")
+        print(f"Received connect signal: {host}:{port}")
         try:
             p = HTTPPeer()
             p.host, p.port = host, int(port)
@@ -287,6 +288,7 @@ class HTTPNode:
                     block = Block.from_dict(data)
                 except IndexError:  # height limit reached
                     synced = True
+            break
 
     def run(self):
         self.app.run(use_reloader=False, threaded=True)
