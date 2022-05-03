@@ -11,7 +11,6 @@ Most, if not all, of the core elements of the blockchain can be serialized into 
 Simply convert any of the following objects (after instantiation) with `str(cls)`:
 
  - Transaction
- - MempoolTx
  - Block
  - Mempool
  - Input
@@ -24,7 +23,7 @@ Simply convert any of the following objects (after instantiation) with `str(cls)
 
 ### Why?
 
-ChickenTicket is meant to be a PoW and PoS coin. PoW will eventually be phased out such that the only way to mint coins will be to stake.
+ChickenTicket is meant to be a PoS coin.
 We plan to offer a faucet, exchange, and some other services for the coin to incentivize usage and ease getting into the coin.
 The coin is based on modules that are included in the Python standard library and other pure Python libraries such that CHKN can run on anything that supports Python.
 Speed and reliability is our number 1 goal.
@@ -33,9 +32,13 @@ Speed and reliability is our number 1 goal.
 Chicken Ticket uses a number of technologies:
 * [Python 3] - A powerful object-oriented programming language.
 * [SQLite] - An ACID-compliant database solution for storing information in a single file, locally.
-* [Msgpack] - Responsible for compressing and serializing network messages
-* [PyCryptodomex] - Low-level cryptographic primitives for making the coin secure (hashlib for pure Python install)
+* [Msgpack] - Responsible for compressing and serializing network messages.
+* [PyCryptodomex] - Low-level cryptographic primitives for making the coin secure (hashlib for pure Python install).
 * [ECDSA] - Elliptic Curve Digital Signature Algorithm. Used for generating keys fast and securely.
+* [Flask] - Microframework webserver. `httpnode` uses this to provide a very basic node.
+* [qrcode] - Generate a QR code from data, such as an address.
+* [pillow] - Working with images, used by `qrcode`.
+* [PySimpleGUI] - Used by `simplegui` to provide a basic wallet for use by end-users.
 
 ### Installing from source
 Chicken Ticket requires [Python](https://python.org/) 3.6+ to run.
@@ -57,6 +60,14 @@ $ python3 -m pip install -r requirements.txt
 $ cd chickenticket
 $ py -3 -m pip install -r requirements.txt
 ```
+
+### How to use
+
+After installing requirements, launch the wallet with:
+```sh
+python3 src/simplegui.py
+```
+Wallet setup is automated and will guide you through the process.
 
 ### Development
 Want to contribute? We ❤️❤️❤️ pull requests! 
