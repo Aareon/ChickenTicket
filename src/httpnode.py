@@ -179,7 +179,7 @@ class HTTPNode:
         return self
 
     def connect(self):
-        print("Connected", request.remote_addr, request.get("listen"))
+        print("Connected", request.remote_addr, request.args.get("listen"))
 
     def get_height(self):
         """Endpoint `get_height`"""
