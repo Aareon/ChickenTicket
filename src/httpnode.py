@@ -147,7 +147,7 @@ class HTTPNode:
         for i, p in enumerate(self.peers_list):
             host, port = p.rstrip().split(":")
             
-            if (host, port) == (self.host, self.port):
+            if (host, int(port)) == (self.host, self.port):
                 # if this peer is this node
                 continue
 
@@ -185,7 +185,19 @@ class HTTPNode:
         return self
 
     def connect(self):
-        print("Connected", request.remote_addr, request.args.get("listen"))
+        host, port = request.remote_addr, request.args.get("listen")
+        try:
+            p = HTTPPeer()
+            p.host, p.port = host, int(port)
+            if p in self.peers:
+                return json.dumps({"connected": "already"})
+            connected = True
+        except Exception as e:
+            print(f"{request.remote_addr} failed to connect -", type(e), str(e))
+            connected = False
+        return json.dumps(
+            {"connected": connected}
+        )
 
     def get_height(self):
         """Endpoint `get_height`"""
@@ -235,7 +247,7 @@ class HTTPNode:
             p = rand.choice(self.peers)
             height = p.get_height()  # GET peer `get_height`
 
-            trusted_peers = self.choose_block_at_height(height)
+            trusted_peers = self.choose_peers_at_height(height)
 
             # choose chain from peer(s) with most common block proof
             chosen = None
