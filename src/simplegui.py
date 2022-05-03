@@ -180,6 +180,7 @@ def run():
         """Callback to use when node connections changes
 
         Updates the connections label in main layout"""
+        print(f"Connections: {conns}")
         window["-connections-"].Update(f"{conns} connections")
 
     node.connect_cb = connections_changed
