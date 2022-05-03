@@ -172,7 +172,7 @@ class HTTPNode:
         return self
 
     def connect(self):
-        print(requests.session)
+        print(request.session)
 
     def get_height(self):
         """Endpoint `get_height`"""
