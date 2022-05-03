@@ -249,7 +249,7 @@ def run():
 
         Updates the connections label in main layout"""
         print(f"Connections: {conns}")
-        window["-connections-"].Update(f"{conns} connections")
+        main_window["-connections-"].Update(f"{conns} connections")
 
     node.connect_cb = connections_changed
     while True:
