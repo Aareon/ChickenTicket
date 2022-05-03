@@ -167,6 +167,8 @@ class HTTPNode:
                 print(type(e), str(e))
                 print(f"Failed to connect to peer {host}:{port}")
 
+        self.connected_cb(len(self.peers))
+
         # Load chain
         chain_fp = SRC_PATH.parent / "chain/blockchain.json"
         print("Loading blockchain.json")
