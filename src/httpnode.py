@@ -52,9 +52,9 @@ class HTTPPeer:
         except:
             raise
 
-    def connect(self, listen_port: int):
+    def connect(self):
         try:
-            resp = send_request("connect", listen_port)
+            resp = send_request("connect")
             self.connected = True
         except:
             self.connected = False
@@ -100,7 +100,7 @@ class HTTPNode:
         self,
         host="0.0.0.0",
         port=42169,
-        peers_list: List = None,
+        peers_list: List = [],
         wallet=None,
         config=Config,
     ):
@@ -133,14 +133,33 @@ class HTTPNode:
             handler=self.get_block,
         )
 
+        # prepare peers list and try to connect
+        # remove peers that are invalid
+        for i, p in self.peers_list:
+            host, port = p.split(":")
+            p = HTTPPeer(host, int(port))
+            try:
+                connected = p.connect()
+                if connected:
+                    self.peers_list[i] = p
+            except Exception as e:
+                print(type(e), str(e))
+                print(f"Failed to connect to peer {host}:{port}")
+
         # Load chain
         chain_fp = SRC_PATH.parent / "chain/blockchain.json"
         print("Loading blockchain.json")
         if not chain_fp.exists():
-            # generate from genesis
-            tx = hardcoded.generate_genesis_tx(self.wallet)
-            block = hardcoded.generate_genesis_block(tx)
-            self.chain.append(block)
+            # create chain if it doesn't exist
+            
+            # check with peers first to find the most commonly accepted genesis and start from there
+            if len(self.peers_list) > 0:
+                self.sync_chain()
+            else:
+                # generate from genesis
+                tx = hardcoded.generate_genesis_tx(self.wallet)
+                block = hardcoded.generate_genesis_block(tx)
+                self.chain.append(block)
 
         return self
 
@@ -168,6 +187,24 @@ class HTTPNode:
             block = self.chain[h]
 
         return block.json()
+    
+    def choose_peers_at_height(self, height):
+        """Choose peers that agree on a block at given height
+        """
+        # get block proof at (h) from peers and compare
+        proofs_and_peer = [[p.get_block(height)["proof"], p] for p in self.peers]
+
+        # itemize count of unique block proofs at height (x)
+        proof_count = {}
+        for p, c in proofs:
+            if proof_count.get(p) is not None:
+                proof_count[p]["peers"].append(c)
+                proof_count[p]["count"] += 1
+            else:
+                proof_count[p] = {"count": 1, "peers": [c]}
+        
+        return proof_count
+
 
     def sync_chain(self):
         # using peers, update chain
@@ -180,17 +217,7 @@ class HTTPNode:
             p = rand.choice(self.peers)
             height = p.get_height()  # GET peer `get_height`
 
-            # get block proof at (x) from more peers and compare
-            proofs_and_peer = [[p.get_block()["proof"], p] for p in self.peers]
-
-            # itemize count of unique block proofs at height (x)
-            proof_count = {}
-            for p, c in proofs:
-                if proof_count.get(p) is not None:
-                    proof_count[p]["peers"].append(c)
-                    proof_count[p]["count"] += 1
-                else:
-                    proof_count[p] = {"count": 1, "peers": [c]}
+            trusted_peers = self.choose_block_at_height(height)
 
             # choose chain from peer(s) with most common block proof
             chosen = None
