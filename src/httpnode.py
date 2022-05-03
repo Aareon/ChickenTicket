@@ -278,7 +278,7 @@ class HTTPNode:
                 p = rand.choice(chosen["peers"])
                 try:
                     data = p.get_block(self.synced_height + 1)
-                    block = Block.from_json(data)
+                    block = Block.from_dict(data)
                 except IndexError:  # height limit reached
                     synced = True
 
