@@ -207,18 +207,16 @@ class HTTPNode:
 
     def get_block(self):
         try:
-            h = int(request.args.get("h")["height"])
+            h = int(request.args.get("h"))
             print(f"Getting block at height {h}")
             print(f"Current height: {len(self.chain) - 1}")
             print(self.chain)
+            return json.dumps(self.chain[h].json())
         except Exception as e:
             print("Failed to send get_block", type(e), str(e))
-            return 400
+            return make_response(status_code=400)
         if h > self.synced_height:
             return json.dumps({"block": None})
-        else:
-            return json.dumps(self.chain[h].json())
-
 
     def choose_peers_at_height(self, height):
         """Choose peers that agree on a block at given height"""
