@@ -160,14 +160,14 @@ class HTTPNode:
                 connected = p.connect(self.port)
                 if connected:
                     self.peers.append(p)
-                    if self.connected_cb is not None:
-                        self.connected_cb(len(self.peers))
+                    if self.connect_cb is not None:
+                        self.connect_cb(len(self.peers))
                     print(f"Connected to {host}:{port}")
             except Exception as e:
                 print(type(e), str(e))
                 print(f"Failed to connect to peer {host}:{port}")
 
-        self.connected_cb(len(self.peers))
+        #self.connect_cb(len(self.peers))
 
         # Load chain
         chain_fp = SRC_PATH.parent / "chain/blockchain.json"
