@@ -259,7 +259,8 @@ class HTTPNode:
                     chosen = p
                 elif p["count"] > chosen:
                     chosen = p
-
+            
+            print(chosen)
             # iterate over peers and gather chain
             while not synced:
                 p = rand.choice(chosen["peers"])
