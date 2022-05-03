@@ -192,6 +192,8 @@ class HTTPNode:
             p.host, p.port = host, int(port)
             if p in self.peers:
                 return json.dumps({"connected": "already"})
+            
+            self.peers.append(p)
             connected = True
             self.connect_cb(len(self.peers))
         except Exception as e:
