@@ -147,7 +147,7 @@ class HTTPNode:
         for i, p in enumerate(self.peers_list):
             host, port = p.rstrip().split(":")
             
-            if host, port == self.host, self.port:
+            if (host, port) == (self.host, self.port):
                 # if this peer is this node
                 continue
 
