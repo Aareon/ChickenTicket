@@ -192,6 +192,7 @@ class HTTPNode:
             if p in self.peers:
                 return json.dumps({"connected": "already"})
             connected = True
+            self.connect_cb(len(self.peers))
         except Exception as e:
             print(f"{request.remote_addr} failed to connect -", type(e), str(e))
             connected = False
@@ -259,9 +260,9 @@ class HTTPNode:
             for proof in proof_count:
                 print(proof)
                 if chosen is None:
-                    chosen = proof
-                elif proof["count"] > chosen:
-                    chosen = proof
+                    chosen = proof_count[proof]
+                elif proof_count[proof]["count"] > chosen:
+                    chosen = proof_count[proof]
 
             print(chosen)
 
