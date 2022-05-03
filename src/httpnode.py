@@ -35,11 +35,14 @@ class HTTPPeer:
 
         self.connected = False
 
-    def send_request(self, endpoint, *args):
+    def send_request(self, endpoint, **kwargs):
         try:
             query = None
-            if len(args) > 0:
-                query = f"?{a for a in args}"
+            if len(kwargs) > 0:
+                query = "?"
+                for k, v in kwargs.items():
+                    query += f"{k}={v},"
+                query = query[:-1]  # remove trailing comma
             resp = r.get(
                 f"http://{self.host}:{self.port}/api/{endpoint}{query if query is not None else ''}"
             )
@@ -50,9 +53,9 @@ class HTTPPeer:
         except:
             raise
 
-    def connect(self):
+    def connect(self, listen):
         try:
-            resp = self.send_request("connect")
+            resp = self.send_request("connect", listen=listen)
             self.connected = True
         except Exception as e:
             self.connected = False
@@ -65,7 +68,7 @@ class HTTPPeer:
         return self.send_request("get_height")
 
     def get_block(self, height):
-        return self.send_request("get_block")
+        return self.send_request("get_block", h=height)
 
 
 class FlaskAppWrapper:
@@ -116,6 +119,8 @@ class HTTPNode:
         self.is_synced = False  # run `node.sync_chain()`
         self.synced_height = 0  # current height that has been synced
 
+        self.connect_cb = None  # callback to call when connections have changed
+
     def setup(self):
         # setup node endpoints
         self.app.add_endpoint(
@@ -146,9 +151,11 @@ class HTTPNode:
             p = HTTPPeer()
             p.host, p.port = host, int(port)
             try:
-                connected = p.connect()
+                connected = p.connect(self.port)
                 if connected:
                     self.peers.append(p)
+                    if self.connected_cb is not None:
+                        self.connected_cb(len(self.peers))
                     print(f"Connected to {host}:{port}")
             except Exception as e:
                 print(type(e), str(e))
@@ -172,7 +179,7 @@ class HTTPNode:
         return self
 
     def connect(self):
-        print(request.session)
+        print("Connected", request.remote_addr, request.get("listen"))
 
     def get_height(self):
         """Endpoint `get_height`"""
