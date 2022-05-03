@@ -41,7 +41,7 @@ def run():
             # generate a new wallet
             # get 12 random words from mnemonics.txt
             def generate_wordlist():
-                with open(SRC_PATH / "mnemonics.txt", "r") as f:
+                with open(SRC_DIR / "mnemonics.txt", "r") as f:
                     words = f.read().splitlines()
                     word_list = []
                     for _ in range(0, 12):
