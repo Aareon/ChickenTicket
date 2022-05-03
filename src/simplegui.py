@@ -19,10 +19,11 @@ WALLET = None
 AVAILABLE = 0
 PENDING = 0
 
-images_dir = Path(__file__).parent.parent / "images"
-print(f"Images dir: {images_dir}")
+SRC_DIR = Path(__file__).parent
+IMAGES_DIR = SRC_DIR.parent / "images"
+PEERS_LIST = SRC_DIR.parent / "peerslist.txt"
+print(f"Images dir: {IMAGES_DIR}")
 
-SRC_PATH = Path(__file__).parent
 # attempt to load wallet file from default location
 
 
@@ -150,7 +151,9 @@ def run():
         print("Wallet exists in default location. Loading ...")
         WALLET = Wallet().load_from_der(wallet_fp)
 
-    node = HTTPNode(wallet=WALLET, config=Config)
+    with open(PEERS_LIST) as f:
+        peers_list = f.readlines()
+    node = HTTPNode(wallet=WALLET, config=Config, peers_list=peers_list)
     node.setup()
     node_thread = threading.Thread(
         target=lambda: node.run(), daemon=True
@@ -181,7 +184,7 @@ def run():
             # fmt: off
             send_win = sg.Window("Send", [  # send window layout
                 [sg.Text("Send", font="Arial 12 bold")],
-                [sg.Input(key="-input-"), sg.Image(str(images_dir / "red.png"), size=(20, 20), key='-status-')],
+                [sg.Input(key="-input-"), sg.Image(str(IMAGES_DIR / "red.png"), size=(20, 20), key='-status-')],
                 [sg.Text("Fee: 0.0 CHKN", key="-fee-")],  # estimated transaction fee
                 [sg.HSeparator()],
                 [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
@@ -198,38 +201,38 @@ def run():
                     try:
                         if Decimal(vals["-input-"]) <= Decimal(0):
                             send_win["-status-"].Update(
-                                str(images_dir / "orange.png"), size=(20, 20)
+                                str(IMAGES_DIR / "orange.png"), size=(20, 20)
                             )
                         elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
                             send_win["-status-"].Update(
-                                str(images_dir / "red.png"), size=(20, 20)
+                                str(IMAGES_DIR / "red.png"), size=(20, 20)
                             )
                         elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
                             send_win["-status-"].Update(
-                                str(images_dir / "green.png"), size=(20, 20)
+                                str(IMAGES_DIR / "green.png"), size=(20, 20)
                             )
                     except:
                         send_win["-status-"].Update(
-                            str(images_dir / "red.png"), size=(20, 20)
+                            str(IMAGES_DIR / "red.png"), size=(20, 20)
                         )
                 if event == "-send-":
                     try:
                         if Decimal(vals["-input-"]) <= Decimal(0):
                             send_win["-status-"].Update(
-                                str(images_dir / "orange.png"), size=(20, 20)
+                                str(IMAGES_DIR / "orange.png"), size=(20, 20)
                             )
                         elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
                             send_win["-status-"].Update(
-                                str(images_dir / "red.png"), size=(20, 20)
+                                str(IMAGES_DIR / "red.png"), size=(20, 20)
                             )
                         elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
                             send_win["-status-"].Update(
-                                str(images_dir / "green.png"), size=(20, 20)
+                                str(IMAGES_DIR / "green.png"), size=(20, 20)
                             )
                             break
                     except:
                         send_win["-status-"].Update(
-                            str(images_dir / "red.png"), size=(20, 20)
+                            str(IMAGES_DIR / "red.png"), size=(20, 20)
                         )
             send_win.close()
 
@@ -238,9 +241,9 @@ def run():
             window[event].update(disabled=True)
             address = WALLET.addresses[0][0]
             qr = qrcode.make(address, box_size=6)
-            if not images_dir.exists():
+            if not IMAGES_DIR.exists():
                 images_dir.mkdir(parents=True)
-            qr.save(images_dir / "addressqr.png")
+            qr.save(IMAGES_DIR / "addressqr.png")
             # fmt: off
 
             rx_win = sg.Window("Receive", [  # receive window layout
