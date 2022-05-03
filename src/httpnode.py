@@ -254,7 +254,7 @@ class HTTPNode:
 
             # choose chain from peer(s) with most common block proof
             chosen = None
-            for p in proof_count:
+            for p in trusted_peers:
                 if chosen is None:
                     chosen = p
                 elif p["count"] > chosen:
