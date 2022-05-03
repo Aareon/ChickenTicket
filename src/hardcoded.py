@@ -32,6 +32,7 @@ def generate_genesis_block(txs):
     else:
         for tx in txs:
             block.add_transaction(tx)
+    block.hash()
     print(block)
     return block
 
