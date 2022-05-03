@@ -210,6 +210,10 @@ class HTTPNode:
             print(f"Getting block at height {h}")
             print(f"Current height: {len(self.chain) - 1}")
             print(self.chain)
+            
+            if h > self.synced_height:
+                return json.dumps({"block": None})
+
             try:
                 return json.dumps(self.chain[h].json())
             except Exception as e:
@@ -221,8 +225,6 @@ class HTTPNode:
         except Exception as e:
             print("Failed to send get_block", type(e), str(e))
             return Response(status=500)
-        if h > self.synced_height:
-            return json.dumps({"block": None})
 
     def choose_peers_at_height(self, height):
         """Choose peers that agree on a block at given height"""
@@ -278,6 +280,10 @@ class HTTPNode:
                 p = rand.choice(chosen["peers"])
                 try:
                     data = p.get_block(self.synced_height + 1)
+                    if data.get("block") is None:
+                        # received a null block indicating the end of the chain
+                        synced = True
+                        break
                     block = Block.from_dict(data)
                 except IndexError:  # height limit reached
                     synced = True
