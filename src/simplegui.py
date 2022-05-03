@@ -160,13 +160,13 @@ def run():
     # fmt: off
     layout = [  # main layout
         [sg.Text("Wallet", font="Arial 14 bold"), sg.Text("(Out of sync)", text_color="#f00", key='-sync-')],
-        [sg.Text("Balances", font="Arial 12 bold"), sg.HSeparator(), sg.Text("Recent Transactions", font=("Arial 12 bold"))],
+        [sg.Text("Balances", font="Arial 12 bold"), sg.Push(), sg.Text("Recent Transactions", font=("Arial 12 bold"))],
         [sg.Text("Available:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-available-')],
         [sg.Text("Pending:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-pending-')],
         [sg.HSeparator()],
         [sg.Text("Total:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-total-')],
         [sg.Button("Send", key="-send-"), sg.VSeperator(), sg.Button("Receive", key="-receive-"), sg.VSeperator(), sg.Button("Settings", key='-settings-')],
-        [sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text("0 connections", key='-connections-')]
+        [sg.Text("Height: 0", font="Arial 9"), sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text("0 connections", key='-connections-')]
     ]
     # fmt: on
 
@@ -190,7 +190,7 @@ def run():
             ])
             # fmt: on
 
-            while True:
+            while True:  # send window loop
                 event, vals = send_win.read()
                 if event == "-cancel-" or event == sg.WIN_CLOSED:
                     break
@@ -231,11 +231,9 @@ def run():
                         send_win["-status-"].Update(
                             str(images_dir / "red.png"), size=(20, 20)
                         )
-
             send_win.close()
 
         if event == "-receive-":  # Receive popup window
-            # Receive popup window
             # Receive button pressed, show address popup
             window[event].update(disabled=True)
             address = WALLET.addresses[0][0]
@@ -244,13 +242,15 @@ def run():
                 images_dir.mkdir(parents=True)
             qr.save(images_dir / "addressqr.png")
             # fmt: off
-            rx_win = sg.Window("Receive", [
+
+            rx_win = sg.Window("Receive", [  # receive window layout
                 [sg.Image(str(images_dir / "addressqr.png"))],
                 [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
                 [sg.Button("OK", key='-ok-')]
             ])
             # fmt: on
-            while True:
+
+            while True:  # receive window loop
                 event, _ = rx_win.read()
                 if event == "-ok-" or event == sg.WIN_CLOSED:
                     window["-receive-"].update(disabled=False)
