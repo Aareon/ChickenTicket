@@ -210,7 +210,14 @@ class HTTPNode:
             print(f"Getting block at height {h}")
             print(f"Current height: {len(self.chain) - 1}")
             print(self.chain)
-            return json.dumps(self.chain[h].json())
+            try:
+                return json.dumps(self.chain[h].json())
+            except Exception as e:
+                print(
+                    f"Failed to send `get_block` response for height {h}"
+                    + "\n"
+                    + f"{type(e)} {str(e)}"
+                )
         except Exception as e:
             print("Failed to send get_block", type(e), str(e))
             return make_response(status_code=400)
