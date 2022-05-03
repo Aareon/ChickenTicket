@@ -259,11 +259,12 @@ class HTTPNode:
             for proof in proof_count:
                 print(proof)
                 if chosen is None:
-                    chosen = p
-                elif p["count"] > chosen:
-                    chosen = p
-            
+                    chosen = proof
+                elif proof["count"] > chosen:
+                    chosen = proof
+
             print(chosen)
+
             # iterate over peers and gather chain
             while not synced:
                 p = rand.choice(chosen["peers"])
