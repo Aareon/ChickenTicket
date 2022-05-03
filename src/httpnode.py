@@ -131,6 +131,11 @@ class HTTPNode:
             endpoint_name="get_block",
             handler=self.get_block,
         )
+        self.app.add_endpoint(
+            endpoint="/api/connect",
+            endpoint_name="connect",
+            handler=self.connect,
+        )
 
         # prepare peers list and try to connect
         # remove peers that are invalid
