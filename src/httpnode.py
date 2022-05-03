@@ -228,6 +228,7 @@ class HTTPNode:
                     + "\n"
                     + f"{type(e)} {str(e)}"
                 )
+                return Response(status=500)
         except Exception as e:
             print("Failed to send get_block", type(e), str(e))
             return Response(status=500)
