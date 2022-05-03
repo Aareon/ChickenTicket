@@ -222,6 +222,8 @@ class HTTPNode:
         """Choose peers that agree on a block at given height"""
         # get block proof at (h) from peers and compare
         print(f"CHOOSE: {height}")
+        block = json.loads(p.get_block(height))
+        print("GOT", block)
         proofs_and_peer = [[json.loads(p.get_block(height))["proof"], p] for p in self.peers]
 
         # itemize count of unique block proofs at height (x)
