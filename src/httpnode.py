@@ -276,11 +276,11 @@ class HTTPNode:
             # iterate over peers and gather chain
             while not synced:
                 p = rand.choice(chosen["peers"])
-                block_json = p.get_block(self.synced_height + 1)
-
-                # validate block
-                block = Block.from_json()
-                break
+                try:
+                    data = p.get_block(self.synced_height + 1)
+                    block = Block.from_json(data)
+                except IndexError:  # height limit reached
+                    synced = True
 
     def run(self):
         self.app.run(use_reloader=False, threaded=True)
