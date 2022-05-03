@@ -229,7 +229,7 @@ class HTTPNode:
 
         # itemize count of unique block proofs at height (x)
         proof_count = {}
-        for p, c in proofs:
+        for p, c in proofs:  # proof, client (peer)
             if proof_count.get(p) is not None:
                 proof_count[p]["peers"].append(c)
                 proof_count[p]["count"] += 1
@@ -250,12 +250,14 @@ class HTTPNode:
             height = p.get_height()["height"]  # GET peer `get_height`
             print(f"SYNC: getting height {height}")
 
-            trusted_peers = self.choose_peers_at_height(height)
+            # get dict of proofs and peers that agree on proof @ height
+            proof_count = self.choose_peers_at_height(height)
+            print(f"proof_count: {proof_count}")
 
             # choose chain from peer(s) with most common block proof
             chosen = None
-            for p in trusted_peers:
-                print(p)
+            for proof in trusted_peers:
+                print(proof)
                 if chosen is None:
                     chosen = p
                 elif p["count"] > chosen:
