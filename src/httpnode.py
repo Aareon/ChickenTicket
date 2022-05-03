@@ -146,7 +146,7 @@ class HTTPNode:
         # remove peers that are invalid
         for i, p in enumerate(self.peers_list):
             host, port = p.rstrip().split(":")
-            
+
             if (host, int(port)) == (self.host, self.port):
                 # if this peer is this node
                 continue
@@ -195,9 +195,7 @@ class HTTPNode:
         except Exception as e:
             print(f"{request.remote_addr} failed to connect -", type(e), str(e))
             connected = False
-        return json.dumps(
-            {"connected": connected}
-        )
+        return json.dumps({"connected": connected})
 
     def get_height(self):
         """Endpoint `get_height`"""
@@ -227,7 +225,7 @@ class HTTPNode:
         for p in self.peers:
             block = json.loads(p.get_block(height))
             print("GOT", block)
-            proofs.append([json.loads(p.get_block(height))["proof"], p])
+            proofs.append([json.loads(p.get_block(height))["hash"], p])
 
         # itemize count of unique block proofs at height (x)
         proof_count = {}
