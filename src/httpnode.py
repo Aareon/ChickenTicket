@@ -146,10 +146,16 @@ class HTTPNode:
         # remove peers that are invalid
         for i, p in enumerate(self.peers_list):
             host, port = p.rstrip().split(":")
+            
+            if host, port == self.host, self.port:
+                # if this peer is this node
+                continue
+
             print(host, port)
             print(f"Attempting connection to {host}:{port}")
             p = HTTPPeer()
             p.host, p.port = host, int(port)
+
             try:
                 connected = p.connect(self.port)
                 if connected:
