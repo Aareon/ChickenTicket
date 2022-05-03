@@ -87,7 +87,7 @@ Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
  - DSL for sub-contracts
  - Mining
  - Clean up!
- - Graphical Wallet
+ - Graphical Wallet ([`simplegui.py`](https://github.com/Aareon/chickenticket/blob/master/src/simplegui.py))
 
 
 License
