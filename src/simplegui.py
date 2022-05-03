@@ -175,6 +175,14 @@ def run():
 
     # Main wallet window
     window = sg.Window("ChickenTicket simple GUI", layout)
+
+    def connections_changed(conns: int):
+        """Callback to use when node connections changes
+
+        Updates the connections label in main layout"""
+        window["-connections-"].Update(f"{conns} connections")
+
+    node.connect_cb = connections_changed
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED:
