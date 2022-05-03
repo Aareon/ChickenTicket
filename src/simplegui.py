@@ -256,7 +256,7 @@ def run():
             # fmt: off
 
             rx_win = sg.Window("Receive", [  # receive window layout
-                [sg.Image(str(images_dir / "addressqr.png"))],
+                [sg.Image(str(IMAGES_DIR / "addressqr.png"))],
                 [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
                 [sg.Button("OK", key='-ok-')]
             ])
