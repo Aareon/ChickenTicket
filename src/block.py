@@ -142,9 +142,9 @@ class Block:
         return self.proof
 
     @classmethod
-    def from_json(cls, data):
+    def from_dict(cls, data):
         try:
-            return cls(**json.loads(data))
+            return cls(**data)
         except:
             raise
 
