@@ -1,6 +1,5 @@
 import json
 import random as rand
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
@@ -29,7 +28,6 @@ class StatusError(Exception):
     """Exception for when request returns non-200 status"""
 
 
-@dataclass
 class HTTPPeer:
     def __init___(self, host, port):
         self.host = host
@@ -43,7 +41,7 @@ class HTTPPeer:
             if len(args) > 0:
                 query = f"?{a for a in args}"
             resp = r.get(
-                f"{self.host}:{self.port}/api/{endpoint}{query if query is not None else ''}"
+                f"http://{self.host}:{self.port}/api/{endpoint}{query if query is not None else ''}"
             )
             if resp.status_code != 200:
                 raise StatusError
@@ -54,19 +52,20 @@ class HTTPPeer:
 
     def connect(self):
         try:
-            resp = send_request("connect")
+            resp = self.send_request("connect")
             self.connected = True
-        except:
+        except Exception as e:
             self.connected = False
+            print("Failed to connect:", type(e), str(e))
         finally:
             return self.connected
 
     def get_height(self):
         """Get the current height"""
-        return send_request("get_height")
+        return self.send_request("get_height")
 
     def get_block(self, height):
-        return send_request("get_block")
+        return self.send_request("get_block")
 
 
 class FlaskAppWrapper:
@@ -135,13 +134,17 @@ class HTTPNode:
 
         # prepare peers list and try to connect
         # remove peers that are invalid
-        for i, p in self.peers_list:
-            host, port = p.split(":")
-            p = HTTPPeer(host, int(port))
+        for i, p in enumerate(self.peers_list):
+            host, port = p.rstrip().split(":")
+            print(host, port)
+            print(f"Attempting connection to {host}:{port}")
+            p = HTTPPeer()
+            p.host, p.port = host, int(port)
             try:
                 connected = p.connect()
                 if connected:
-                    self.peers_list[i] = p
+                    self.peers.append(p)
+                    print(f"Connected to {host}:{port}")
             except Exception as e:
                 print(type(e), str(e))
                 print(f"Failed to connect to peer {host}:{port}")
@@ -151,9 +154,9 @@ class HTTPNode:
         print("Loading blockchain.json")
         if not chain_fp.exists():
             # create chain if it doesn't exist
-            
+
             # check with peers first to find the most commonly accepted genesis and start from there
-            if len(self.peers_list) > 0:
+            if len(self.peers) > 0:
                 self.sync_chain()
             else:
                 # generate from genesis
@@ -164,8 +167,7 @@ class HTTPNode:
         return self
 
     def connect(self):
-        listen_port = request.args.get("listen")
-        p = HTTPPeer()
+        print(requests.session)
 
     def get_height(self):
         """Endpoint `get_height`"""
@@ -187,10 +189,9 @@ class HTTPNode:
             block = self.chain[h]
 
         return block.json()
-    
+
     def choose_peers_at_height(self, height):
-        """Choose peers that agree on a block at given height
-        """
+        """Choose peers that agree on a block at given height"""
         # get block proof at (h) from peers and compare
         proofs_and_peer = [[p.get_block(height)["proof"], p] for p in self.peers]
 
@@ -202,9 +203,8 @@ class HTTPNode:
                 proof_count[p]["count"] += 1
             else:
                 proof_count[p] = {"count": 1, "peers": [c]}
-        
-        return proof_count
 
+        return proof_count
 
     def sync_chain(self):
         # using peers, update chain
