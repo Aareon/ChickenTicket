@@ -44,7 +44,8 @@ class HTTPPeer:
                     query += f"{k}={v},"
                 query = query[:-1]  # remove trailing comma
             resp = r.get(
-                f"http://{self.host}:{self.port}/api/{endpoint}{query if query is not None else ''}"
+                f"http://{self.host}:{self.port}/api/{endpoint}{query if query is not None else ''}",
+                timeout=10,
             )
             if resp.status_code != 200:
                 raise StatusError
