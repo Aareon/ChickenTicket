@@ -207,22 +207,23 @@ class HTTPNode:
 
     def get_block(self):
         try:
-            h = int(request.args.get("h"))
+            h = int(request.args.get("h")["height"])
             print(f"Getting block at height {h}")
             print(f"Current height: {len(self.chain) - 1}")
             print(self.chain)
-        except:
-            return Response(400)
+        except Exception as e:
+            print("Failed to send get_block", type(e), str(e))
+            return 400
         if h > self.synced_height:
-            block = None
+            return json.dumps({"block": None})
         else:
-            block = self.chain[h]
+            return json.dumps(self.chain[h].json())
 
-        return block.json()
 
     def choose_peers_at_height(self, height):
         """Choose peers that agree on a block at given height"""
         # get block proof at (h) from peers and compare
+        print(f"CHOOSE: {height}")
         proofs_and_peer = [[p.get_block(height)["proof"], p] for p in self.peers]
 
         # itemize count of unique block proofs at height (x)
@@ -245,7 +246,8 @@ class HTTPNode:
             # get block proof at (x) from chosen peer
 
             p = rand.choice(self.peers)
-            height = p.get_height()  # GET peer `get_height`
+            height = p.get_height()["height"]  # GET peer `get_height`
+            print(f"SYNC: getting height {height}")
 
             trusted_peers = self.choose_peers_at_height(height)
 
