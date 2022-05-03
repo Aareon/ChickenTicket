@@ -220,7 +220,7 @@ class HTTPNode:
                 )
         except Exception as e:
             print("Failed to send get_block", type(e), str(e))
-            return make_response(status_code=400)
+            return Response(status=500)
         if h > self.synced_height:
             return json.dumps({"block": None})
 
