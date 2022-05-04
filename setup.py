@@ -4,9 +4,9 @@ from distutils.core import setup
 
 setup(
     name="Chicken Ticket",
-    version="0.5",
+    version="0.6",
     description="Pure Python implementation of a cryptocurrency blockchain ",
     author="Aareon Sullivan",
-    author_email="aareon@died-in.space",
+    author_email="askully13@gmail.com",
     url=""
 )
