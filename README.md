@@ -24,7 +24,7 @@ Simply convert any of the following objects (after instantiation) with `str(cls)
 ### Why?
 
 ChickenTicket is meant to be a PoS coin.
-We plan to offer a faucet, exchange, and some other services for the coin to incentivize usage and ease getting into the coin.
+We plan to offer a faucet, a tipbot, and some other services for the coin to incentivize usage and ease getting into the coin.
 The coin is based on modules that are included in the Python standard library and other pure Python libraries such that CHKN can run on anything that supports Python.
 Speed and reliability is our number 1 goal.
 
