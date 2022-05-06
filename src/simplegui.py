@@ -112,32 +112,16 @@ def run():
                 # - recover from keyphrase
                 # - new with password & keyphrase
                 # - no password (caution!)
+
+                # fmt: off
                 return [
                     [sg.Text("Create new wallet", font="Arial 12 bold")],
-                    [
-                        sg.Radio(
-                            "Recover from keyphrase",
-                            "RADIO",
-                            default=True,
-                            key="-radio1-",
-                        )
-                    ],
-                    [
-                        sg.Radio(
-                            "New with password & keyphrase", "RADIO", key="-radio2-"
-                        )
-                    ],
-                    [
-                        sg.Radio(
-                            "New with no password (caution!)", "RADIO", key="-radio3-"
-                        )
-                    ],
-                    [
-                        sg.Button("Back", key="-back-"),
-                        sg.Push(),
-                        sg.Button("Next", key="-next-"),
-                    ],
+                    [sg.Radio("Recover from keyphrase", "RADIO", default=True, key="-radio1-")],
+                    [sg.Radio("New with password & keyphrase", "RADIO", key="-radio2-")],
+                    [sg.Radio("New with no password (caution!)", "RADIO", key="-radio3-")],
+                    [sg.Button("Back", key="-back-"), sg.Push(), sg.Button("Next", key="-next-")]
                 ]
+                # fmt: on
 
             prompt_win = sg.Window(
                 f"{WIN_TITLE} - New Wallet", create_new_wallet_prompt()
