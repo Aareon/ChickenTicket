@@ -29,6 +29,9 @@ sg.user_settings_filename(path=SETTINGS_FP)
 theme = sg.user_settings_get_entry("-theme-", "DarkBlue2")
 sg.user_settings_set_entry("-theme-", theme)
 
+VERSION = "0.6"
+WIN_TITLE = "ChickenTicket"
+
 
 def make_main_window():
     sg.theme(sg.user_settings_get_entry("-theme-"))
@@ -47,65 +50,50 @@ def make_main_window():
     return sg.Window("ChickenTicket simple GUI", layout)
 
 
-def make_send_window():
+def make_send_window(node):
     # sg.theme(sg.user_settings_get_entry('-theme-', 'DarkBlue2'))
-    return sg.Window(
-        "Send",
-        [  # send window layout
-            [sg.Text("Send", font="Arial 12 bold")],
-            [
-                sg.Input(key="-input-"),
-                sg.Image(str(IMAGES_DIR / "red.png"), size=(20, 20), key="-status-"),
-            ],
-            [sg.Text("Fee: 0.0 CHKN", key="-fee-")],  # estimated transaction fee
-            [sg.HSeparator()],
-            [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
-            [sg.Text("Pending:"), sg.Text(f"{PENDING} CHKN", font="Arial 10 bold")],
-            [
-                sg.Button("Cancel", key="-cancel-"),
-                sg.HSeparator(),
-                sg.Button("Check", key="-check-"),
-                sg.Button("Send", key="-send-"),
-            ],
-        ],
-    )
+    def connections_changed(conns: int):
+        """Callback to use when node connections changes
+
+        Updates the connections label in main layout"""
+        print(f"Connections: {conns}")
+        main_window["-connections-"].Update(f"{conns} connections")
+
+    node.connect_cb = connections_changed
+
+    # fmt: off
+    return sg.Window("Send", [  # send window layout
+        [sg.Text("Send", font="Arial 12 bold")], [sg.Input(key="-input-"), sg.Image(str(IMAGES_DIR / "red.png"), size=(20, 20), key="-status-")],
+        [sg.Text("Fee: 0.0 CHKN", key="-fee-")],  # estimated transaction fee
+        [sg.HSeparator()],
+        [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
+        [sg.Text("Pending:"), sg.Text(f"{PENDING} CHKN", font="Arial 10 bold")],
+        [sg.Button("Cancel", key="-cancel-"), sg.HSeparator(), sg.Button("Check", key="-check-"), sg.Button("Send", key="-send-")],
+    ])
+    # fmt: on
 
 
 def make_receive_window(address):
-    # sg.theme(sg.user_settings_get_entry('-theme-', 'DarkBlue2'))
-    sg.Window(
-        "Receive",
-        [  # receive window layout
-            [sg.Image(str(IMAGES_DIR / "addressqr.png"))],
-            [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
-            [sg.Button("OK", key="-ok-")],
-        ],
-    )
+    # fmt: off
+    sg.Window("Receive", [  # receive window layout
+        [sg.Image(str(IMAGES_DIR / "addressqr.png"))],
+        [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
+        [sg.Button("OK", key="-ok-")],
+    ])
+    # fmt: on
 
 
 def make_settings_window():
     # sg.theme(sg.user_settings_get_entry('-theme-', 'DarkBlue2'))
     theme_name_list = sg.theme_list()
-    return sg.Window(
-        "Settings",
-        [  # settings window layout
-            [sg.Text("Look and Feel", font="Arial 12 bold")],
-            [
-                sg.Text("UI Theme", font="Arial 10"),
-                sg.Listbox(
-                    theme_name_list,
-                    default_values=[sg.user_settings_get_entry("-theme-")],
-                    size=(15, 10),
-                    key="-theme_choice-",
-                ),
-            ],
-            [
-                sg.Push(),
-                sg.Button("Apply", key="-apply-"),
-                sg.Button("Done", key="-done-"),
-            ],
-        ],
-    )
+
+    # fmt: off
+    return sg.Window("Settings", [  # settings window layout
+        [sg.Text("Look and Feel", font="Arial 12 bold")],
+        [sg.Text("UI Theme", font="Arial 10"), sg.Listbox(theme_name_list, default_values=[sg.user_settings_get_entry("-theme-")], size=(15, 10), key="-theme_choice-")],
+        [sg.Push(), sg.Button("Apply", key="-apply-"), sg.Button("Done", key="-done-")],
+    ])
+    # fmt: on
 
 
 def run():
@@ -118,6 +106,60 @@ def run():
         wallet_fp = Path(sg.popup_get_folder("Select wallet folder"))
 
         if not (wallet_fp / "wallet.der").exists():
+
+            def create_new_wallet_prompt():
+                # prompt the user how to make the wallet
+                # - recover from keyphrase
+                # - new with password & keyphrase
+                # - no password (caution!)
+                return [
+                    [sg.Text("Create new wallet", font="Arial 12 bold")],
+                    [
+                        sg.Radio(
+                            "Recover from keyphrase",
+                            "RADIO",
+                            default=True,
+                            key="-radio1-",
+                        )
+                    ],
+                    [
+                        sg.Radio(
+                            "New with password & keyphrase", "RADIO", key="-radio2-"
+                        )
+                    ],
+                    [
+                        sg.Radio(
+                            "New with no password (caution!)", "RADIO", key="-radio3-"
+                        )
+                    ],
+                    [
+                        sg.Button("Back", key="-back-"),
+                        sg.Push(),
+                        sg.Button("Next", key="-next-"),
+                    ],
+                ]
+
+            prompt_win = sg.Window(
+                f"{WIN_TITLE} - New Wallet", create_new_wallet_prompt()
+            )
+            while True:
+
+                event, values = prompt_win.read()
+
+                if event == sg.WIN_CLOSED:
+                    sys.exit(0)
+
+                elif event == "-next-":
+
+                    if values["-radio1-"]:
+                        # recover from keyphrase
+                        pass
+                    elif values["-radio2-"]:
+                        # new with password encryption and keyphrase
+                        pass
+                    elif values["-radio3-"]:
+                        # new with no password (still uses keyphrase)
+                        break
 
             # generate a new wallet
             # get 12 random words from mnemonics.txt
@@ -244,14 +286,6 @@ def run():
     # Main wallet window
     main_window = make_main_window()
 
-    def connections_changed(conns: int):
-        """Callback to use when node connections changes
-
-        Updates the connections label in main layout"""
-        print(f"Connections: {conns}")
-        main_window["-connections-"].Update(f"{conns} connections")
-
-    node.connect_cb = connections_changed
     while True:
         event, values = main_window.read()
         if event == sg.WIN_CLOSED:
