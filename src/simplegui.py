@@ -75,7 +75,7 @@ def make_send_window(node):
 
 def make_receive_window(address):
     # fmt: off
-    sg.Window("Receive", [  # receive window layout
+    return sg.Window("Receive", [  # receive window layout
         [sg.Image(str(IMAGES_DIR / "addressqr.png"))],
         [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
         [sg.Button("OK", key="-ok-")],
@@ -96,6 +96,33 @@ def make_settings_window():
     # fmt: on
 
 
+def password_prompt():
+    # fmt: off
+    return sg.Window(f"{WIN_TITLE} - Create a password", [
+        [sg.Text("Enter a password: "), sg.Input(size=(30, 10), key="-pass1-")],
+        [sg.Push(), sg.Text("Confirm: "), sg.Input(size=(30, 10), key="-pass2-")],
+        [sg.Push(), sg.Button("Next", key="-next-")]
+    ])
+    # fmt: on
+
+
+def new_wallet_prompt():
+    """prompt the user how to make the wallet
+    - recover from keyphrase
+    - new with password & keyphrase
+    - no password (caution!)
+    """
+    # fmt: off
+    return sg.Window(f"{WIN_TITLE} - New wallet", [  # new wallet prompt layout
+        [sg.Text("Create new wallet", font="Arial 12 bold")],
+        [sg.Radio("Recover from keyphrase", "RADIO", default=True, key="-radio1-")],
+        [sg.Radio("New with password & keyphrase", "RADIO", key="-radio2-")],
+        [sg.Radio("New with no password (caution!)", "RADIO", key="-radio3-")],
+        [sg.Button("Back", key="-back-"), sg.Push(), sg.Button("Next", key="-next-")]
+    ])
+    # fmt: on
+
+
 def run():
     wallet_fp = Config.DEFAULT_WALLET_FP
 
@@ -107,25 +134,7 @@ def run():
 
         if not (wallet_fp / "wallet.der").exists():
 
-            def create_new_wallet_prompt():
-                # prompt the user how to make the wallet
-                # - recover from keyphrase
-                # - new with password & keyphrase
-                # - no password (caution!)
-
-                # fmt: off
-                return [
-                    [sg.Text("Create new wallet", font="Arial 12 bold")],
-                    [sg.Radio("Recover from keyphrase", "RADIO", default=True, key="-radio1-")],
-                    [sg.Radio("New with password & keyphrase", "RADIO", key="-radio2-")],
-                    [sg.Radio("New with no password (caution!)", "RADIO", key="-radio3-")],
-                    [sg.Button("Back", key="-back-"), sg.Push(), sg.Button("Next", key="-next-")]
-                ]
-                # fmt: on
-
-            prompt_win = sg.Window(
-                f"{WIN_TITLE} - New Wallet", create_new_wallet_prompt()
-            )
+            prompt_win = new_wallet_prompt()
             while True:
 
                 event, values = prompt_win.read()
@@ -138,9 +147,44 @@ def run():
                     if values["-radio1-"]:
                         # recover from keyphrase
                         pass
+
                     elif values["-radio2-"]:
                         # new with password encryption and keyphrase
-                        pass
+                        pwd_win = password_prompt()
+
+                        def check_password(pwd1, pwd2):
+                            pwd1, pwd2 = pwd1.get(), pwd2.get()
+                            print(pwd1, pwd2)
+                            if pwd1 == pwd2:
+                                return True
+                            return False
+
+                        pwd = None
+                        while True:
+
+                            ev, vs = pwd_win.read()
+
+                            if ev == sg.WIN_CLOSED:
+                                sys.exit(0)
+
+                            elif ev == "-next-":
+
+                                if not check_password(
+                                    pwd_win["-pass1-"], pwd_win["-pass2-"]
+                                ):
+                                    pwd_win["-pass1-"].Widget.configure(
+                                        highlightcolor="red", highlightthickness=1, bd=0
+                                    )
+                                    pwd_win["-pass2-"].Widget.configure(
+                                        highlightcolor="red", highlightthickness=1
+                                    )
+                                    pwd = pwd_win["-pass1-"].get()
+                                else:
+                                    break
+
+                        if pwd is not None:
+                            break
+
                     elif values["-radio3-"]:
                         # new with no password (still uses keyphrase)
                         break
@@ -276,7 +320,7 @@ def run():
             break
         if event == "-send-":  # Send popup window
 
-            send_win = make_send_window()
+            send_win = make_send_window(node)
 
             while True:  # send window loop
                 event, vals = send_win.read()
@@ -330,7 +374,7 @@ def run():
                 images_dir.mkdir(parents=True)
             qr.save(IMAGES_DIR / "addressqr.png")
 
-            rx_win = make_receive_window()
+            rx_win = make_receive_window(address)
 
             while True:  # receive window loop
                 event, _ = rx_win.read()
