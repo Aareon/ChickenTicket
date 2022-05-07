@@ -89,6 +89,9 @@ Keep in mind, we are strong supporters of idiomatic and beautiful Python code.
  - Clean up!
  - Graphical Wallet ([`simplegui.py`](https://github.com/Aareon/chickenticket/blob/master/src/simplegui.py))
 
+## Screenshots
+![The ChickenTicket simple GUI](/images/screens.png)
+
 
 License
 ----
