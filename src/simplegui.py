@@ -379,7 +379,7 @@ def run():
             while True:  # receive window loop
                 event, _ = rx_win.read()
                 if event == "-ok-" or event == sg.WIN_CLOSED:
-                    window["-receive-"].update(disabled=False)
+                    rx_win["-receive-"].update(disabled=False)
                     break
                 if event == "-copy-":
                     clip.copy(str(address))
