@@ -1,422 +1,88 @@
-# ChickenTicket simple GUI based on PySimpleGUI
-import sys
-import threading
-import time
-from decimal import Decimal
 from pathlib import Path
-from random import randint
+from typing import List
 
-import pyperclip as clip
-import PySimpleGUI as sg
-import qrcode
-
-from config import Config
-from httpnode import HTTPNode
 from keys import KeyPair
-from wallet import Wallet
-
-WALLET = None
-AVAILABLE = 0
-PENDING = 0
-
-SRC_DIR = Path(__file__).parent
-IMAGES_DIR = SRC_DIR.parent / "images"
-PEERS_LIST = SRC_DIR.parent / "peerslist.txt"
-SETTINGS_FP = SRC_DIR.parent / "sg_settings"
-print(f"Images dir: {IMAGES_DIR}")
-
-sg.user_settings_filename(path=SETTINGS_FP)
-theme = sg.user_settings_get_entry("-theme-", "DarkBlue2")
-sg.user_settings_set_entry("-theme-", theme)
-
-VERSION = "0.6"
-WIN_TITLE = "ChickenTicket"
+from address import Address
 
 
-def make_main_window():
-    sg.theme(sg.user_settings_get_entry("-theme-"))
-    # fmt: off
-    layout = [  # main layout
-        [sg.Text("Wallet", font="Arial 14 bold"), sg.Text("(Out of sync)", text_color="#f00", key='-sync-')],
-        [sg.Text("Balances", font="Arial 12 bold"), sg.Push(), sg.Text("Recent Transactions", font=("Arial 12 bold"))],
-        [sg.Text("Available:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-available-')],
-        [sg.Text("Pending:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-pending-')],
-        [sg.HSeparator()],
-        [sg.Text("Total:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-total-')],
-        [sg.Button("Send", key="-send-"), sg.VSeperator(), sg.Button("Receive", key="-receive-"), sg.VSeperator(), sg.Button("Settings", key='-settings-')],
-        [sg.Text("Height: 0", font="Arial 9"), sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text("0 connections", key='-connections-')]
-    ]
-    # fmt: on
-    return sg.Window("ChickenTicket simple GUI", layout)
+class WalletException(Exception):
+    """Base exception for wallet errors"""
 
 
-def make_send_window(node):
-    # sg.theme(sg.user_settings_get_entry('-theme-', 'DarkBlue2'))
-    def connections_changed(conns: int):
-        """Callback to use when node connections changes
+class Wallet:
+    aliases: List
+    addresses: List
 
-        Updates the connections label in main layout"""
-        print(f"Connections: {conns}")
-        main_window["-connections-"].Update(f"{conns} connections")
+    def __init__(self):
+        self.aliases = []
+        self.addresses = []
 
-    node.connect_cb = connections_changed
+    @classmethod
+    def load_from_der(cls, path: Path):
+        """Load a wallet.der from filepath `path`
+        wallet.der contains a list of private keys
 
-    # fmt: off
-    return sg.Window("Send", [  # send window layout
-        [sg.Text("Send", font="Arial 12 bold")], [sg.Input(key="-input-"), sg.Image(str(IMAGES_DIR / "red.png"), size=(20, 20), key="-status-")],
-        [sg.Text("Fee: 0.0 CHKN", key="-fee-")],  # estimated transaction fee
-        [sg.HSeparator()],
-        [sg.Text("Available:"), sg.Text(f"{AVAILABLE} CHKN", font="Arial 10 bold")],
-        [sg.Text("Pending:"), sg.Text(f"{PENDING} CHKN", font="Arial 10 bold")],
-        [sg.Button("Cancel", key="-cancel-"), sg.HSeparator(), sg.Button("Check", key="-check-"), sg.Button("Send", key="-send-")],
-    ])
-    # fmt: on
+        TODO add encryption"""
+        privs = []
+        try:
+            with open(path, "r+") as f:
+                privs = f.read().splitlines()
+        except FileNotFoundError as exc:
+            raise WalletException(str(exc))
+        
+        # using loaded priv keys, generate addresses associated with them
+        # this requires recreating the KeyPair first
+        kps = []
+        for priv in privs:
+            kps.append(KeyPair.from_privkey_str(priv))
 
+        # generate the addresses list,
+        # joining the keypair as the 2nd element for ease of use
+        for kp in kps:
+            cls.create_wallet_address(cls, kp)
 
-def make_receive_window(address):
-    # fmt: off
-    return sg.Window("Receive", [  # receive window layout
-        [sg.Image(str(IMAGES_DIR / "addressqr.png"))],
-        [sg.Text(f"Address: {address}"), sg.Button("Copy", key="-copy-")],
-        [sg.Button("OK", key="-ok-")],
-    ])
-    # fmt: on
+        return cls
 
+    def save_to_der(self, path: Path):
+        """Save a wallet.der to filepath `path`
+        Overwrites file with new data
+        TODO add encryption"""
+        with open(path, "w+") as f:
+            f.seek(0)
+            for addy in self.addresses:
+                kp = addy[1]  # keypair is stored in a list w owning address
+                f.write(kp.priv.data + "\n")
+            f.truncate()
 
-def make_settings_window():
-    # sg.theme(sg.user_settings_get_entry('-theme-', 'DarkBlue2'))
-    theme_name_list = sg.theme_list()
-
-    # fmt: off
-    return sg.Window("Settings", [  # settings window layout
-        [sg.Text("Look and Feel", font="Arial 12 bold")],
-        [sg.Text("UI Theme", font="Arial 10"), sg.Listbox(theme_name_list, default_values=[sg.user_settings_get_entry("-theme-")], size=(15, 10), key="-theme_choice-")],
-        [sg.Push(), sg.Button("Apply", key="-apply-"), sg.Button("Done", key="-done-")],
-    ])
-    # fmt: on
-
-
-def password_prompt():
-    # fmt: off
-    return sg.Window(f"{WIN_TITLE} - Create a password", [
-        [sg.Text("Enter a password: "), sg.Input(size=(30, 10), key="-pass1-")],
-        [sg.Push(), sg.Text("Confirm: "), sg.Input(size=(30, 10), key="-pass2-")],
-        [sg.Push(), sg.Button("Next", key="-next-")]
-    ])
-    # fmt: on
-
-
-def new_wallet_prompt():
-    """prompt the user how to make the wallet
-    - recover from keyphrase
-    - new with password & keyphrase
-    - no password (caution!)
-    """
-    # fmt: off
-    return sg.Window(f"{WIN_TITLE} - New wallet", [  # new wallet prompt layout
-        [sg.Text("Create new wallet", font="Arial 12 bold")],
-        [sg.Radio("Recover from keyphrase", "RADIO", default=True, key="-radio1-")],
-        [sg.Radio("New with password & keyphrase", "RADIO", key="-radio2-")],
-        [sg.Radio("New with no password (caution!)", "RADIO", key="-radio3-")],
-        [sg.Button("Back", key="-back-"), sg.Push(), sg.Button("Next", key="-next-")]
-    ])
-    # fmt: on
-
-
-def run():
-    wallet_fp = Config.DEFAULT_WALLET_FP
-
-    # Select directory for wallet.
-    # Create and save if not exists
-    if not wallet_fp.exists():
-
-        wallet_fp = Path(sg.popup_get_folder("Select wallet folder"))
-
-        if not (wallet_fp / "wallet.der").exists():
-
-            prompt_win = new_wallet_prompt()
-            while True:
-
-                event, values = prompt_win.read()
-
-                if event == sg.WIN_CLOSED:
-                    sys.exit(0)
-
-                elif event == "-next-":
-
-                    if values["-radio1-"]:
-                        # recover from keyphrase
-                        pass
-
-                    elif values["-radio2-"]:
-                        # new with password encryption and keyphrase
-                        pwd_win = password_prompt()
-
-                        def check_password(pwd1, pwd2):
-                            pwd1, pwd2 = pwd1.get(), pwd2.get()
-                            print(pwd1, pwd2)
-                            if pwd1 == pwd2:
-                                return True
-                            return False
-
-                        pwd = None
-                        while True:
-
-                            ev, vs = pwd_win.read()
-
-                            if ev == sg.WIN_CLOSED:
-                                sys.exit(0)
-
-                            elif ev == "-next-":
-
-                                if not check_password(
-                                    pwd_win["-pass1-"], pwd_win["-pass2-"]
-                                ):
-                                    pwd_win["-pass1-"].Widget.configure(
-                                        highlightcolor="red", highlightthickness=1, bd=0
-                                    )
-                                    pwd_win["-pass2-"].Widget.configure(
-                                        highlightcolor="red", highlightthickness=1
-                                    )
-                                    pwd = pwd_win["-pass1-"].get()
-                                else:
-                                    break
-
-                        if pwd is not None:
-                            break
-
-                    elif values["-radio3-"]:
-                        # new with no password (still uses keyphrase)
-                        break
-
-            # generate a new wallet
-            # get 12 random words from mnemonics.txt
-            def generate_wordlist():
-                with open(SRC_DIR / "mnemonics.txt", "r") as f:
-                    words = f.read().splitlines()
-                    word_list = []
-                    for _ in range(0, 12):
-                        r = randint(0, len(words))
-                        while words[r] in word_list:
-                            r = randint(0, len(words))
-                        else:
-                            word_list.append(words[r])
-                    return word_list
-
-            # show recovery phrase dialog
-            def phrase_layout():
-                # fmt: off
-                return [
-                    [sg.Text("Recovery Phrase", font=("Arial 12 bold"))],
-                    [sg.Text("Write the following words down somewhere safe!\nThis will be used to recover your wallet if you ever lock yourself out or lose the file.")],
-                    [sg.Multiline(no_scrollbar=True, size=(30, 3), disabled=True, key='-words-')],
-                    [sg.Button("Refresh", key="-refresh-"), sg.HSeparator(), sg.Button("Next", key="-next-")]
-                ]
-                # fmt: on
-
-            word_win = sg.Window(
-                "ChickenTicket Create Wallet", phrase_layout()
-            ).finalize()
-            word_list = generate_wordlist()
-            word_win["-words-"].update(" ".join(w for w in word_list))
-            while True:
-                event, values = word_win.read()
-                if event == sg.WIN_CLOSED:
-                    if (
-                        sg.popup("Are you sure you want to exit?", button_type=1)
-                        == "Yes"
-                    ):
-                        sys.exit(1)
-                    else:
-                        word_win = sg.Window(
-                            "ChickenTicket Create Wallet", phrase_layout()
-                        ).finalize()
-                        word_list = generate_wordlist()
-                        word_win["-words-"].update(" ".join(w for w in word_list))
-                elif event == "-refresh-":
-                    word_list = generate_wordlist()
-                    word_win["-words-"].update(" ".join(w for w in word_list))
-                elif event == "-next-":
-                    break
-            word_win.close()
-
-            # recovery phrase confirm dialog
-            def confirm_phrase_layout():
-                words = word_list
-
-                rows = [[], [], []]
-                x = 0
-                for i in range(3):
-                    for j in range(4):
-                        n = randint(0, len(words) - 1)
-                        rows[i].append(sg.Button(words.pop(n), key=f"-word{x}-"))
-                        x += 1
-
-                # fmt: off
-                return [
-                    [sg.Text("Confirm your recovery phrase", font=("Arial 10 bold"))],
-                    [sg.Multiline(no_scrollbar=True, disabled=True, size=(30, 3), key="-words-")],
-                    rows,
-                    [sg.HSeparator()],
-                    [sg.Button("Reset", key="-reset-"), sg.HSeparator(), sg.Button("Confirm", disabled=True, key="-confirm-")]
-                ]
-                # fmt: on
-
-            phrase = " ".join(word_list)
-            words = ""
-            window = sg.Window("Confirm Recovery Phrase", confirm_phrase_layout())
-            while True:
-                event, values = window.read()
-                if event == sg.WIN_CLOSED:
-                    if (
-                        sg.popup("Are you sure you want to exit?", button_type=1)
-                        == "Yes"
-                    ):
-                        sys.exit(1)
-                elif "-word" in event and event != "-words-":
-                    words += f"{window[event].get_text()} "
-                    window["-words-"].update(f"{words}")
-                    window[event].update(disabled=True)
-                    if words.rstrip() == phrase:
-                        window["-confirm-"].update(disabled=False)
-                elif event == "-reset-":
-                    words = ""
-                    window["-words-"].update("")
-                    for i in range(0, 12):
-                        window[f"-word{i}-"].update(disabled=False)
-                elif event == "-confirm-":
-                    # phrase entered correctly
-                    break
-            window.close()
-
-            print("Creating new wallet.der ...")
-            kp = KeyPair.from_seed(phrase)
-            WALLET = Wallet()
-            WALLET.create_wallet_address(kp)
-            WALLET.save_to_der(wallet_fp / "wallet.der")
+    def create_wallet_address(self, kp: KeyPair):
+        address = Address.new(kp)
+        if hasattr(self, "addresses"):
+            self.addresses.append([address, kp])
         else:
-            print("Loading wallet.der from user location ...")
-            WALLET = Wallet().load_from_der(wallet_fp / "wallet.der")
-
-    else:
-        print("Wallet exists in default location. Loading ...")
-        WALLET = Wallet().load_from_der(wallet_fp)
-
-    with open(PEERS_LIST) as f:
-        peers_list = f.readlines()
-    node = HTTPNode(wallet=WALLET, config=Config, peers_list=peers_list)
-    node.setup()
-    node_thread = threading.Thread(
-        target=lambda: node.run(), daemon=True
-    )  # flask thread
-    node_thread.start()
-
-    # Main wallet window
-    main_window = make_main_window()
-
-    while True:
-        event, values = main_window.read()
-        if event == sg.WIN_CLOSED:
-            break
-        if event == "-send-":  # Send popup window
-
-            send_win = make_send_window(node)
-
-            while True:  # send window loop
-                event, vals = send_win.read()
-                if event == "-cancel-" or event == sg.WIN_CLOSED:
-                    break
-                if event == "-check-":
-                    try:
-                        if Decimal(vals["-input-"]) <= Decimal(0):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "orange.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "red.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "green.png"), size=(20, 20)
-                            )
-                    except:
-                        send_win["-status-"].Update(
-                            str(IMAGES_DIR / "red.png"), size=(20, 20)
-                        )
-                if event == "-send-":
-                    try:
-                        if Decimal(vals["-input-"]) <= Decimal(0):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "orange.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) > Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "red.png"), size=(20, 20)
-                            )
-                        elif Decimal(vals["-input-"]) <= Decimal(AVAILABLE):
-                            send_win["-status-"].Update(
-                                str(IMAGES_DIR / "green.png"), size=(20, 20)
-                            )
-                            break
-                    except:
-                        send_win["-status-"].Update(
-                            str(IMAGES_DIR / "red.png"), size=(20, 20)
-                        )
-            send_win.close()
-
-        if event == "-receive-":  # Receive popup window
-            # Receive button pressed, show address popup
-            main_window[event].update(disabled=True)
-            address = WALLET.addresses[0][0]
-            qr = qrcode.make(address, box_size=6)
-            if not IMAGES_DIR.exists():
-                images_dir.mkdir(parents=True)
-            qr.save(IMAGES_DIR / "addressqr.png")
-
-            rx_win = make_receive_window(address)
-
-            while True:  # receive window loop
-                event, _ = rx_win.read()
-                if event == "-ok-" or event == sg.WIN_CLOSED:
-                    rx_win["-receive-"].update(disabled=False)
-                    break
-                if event == "-copy-":
-                    clip.copy(str(address))
-            rx_win.close()
-
-        if event == "-settings-":  # settings popup window
-            settings_win = make_settings_window()
-
-            while True:  # settings window loop
-                event, values = settings_win.read()
-                if event == sg.WIN_CLOSED:
-                    break
-                elif event == "-apply-":
-                    if values["-theme_choice-"][0] != sg.user_settings_get_entry(
-                        "-theme-"
-                    ):
-                        sg.user_settings_set_entry(
-                            "-theme-", values["-theme_choice-"][0]
-                        )  # set theme to choice
-                        sg.theme(sg.user_settings_get_entry("-theme-"))
-                        # reset windows
-                        main_window.close()
-                        settings_win.close()
-                        main_window = make_main_window()
-                        settings_win = make_settings_window()
-                elif event == "-done-":
-                    break
-
-            settings_win.close()
-
-    print("Closing!")
-    main_window.close()
-    sys.exit(0)
+            self.addresses = [[address, kp]]
+        return address
+    
+    def create_new(self, kp: KeyPair = None):
+        if kp is None:
+            kp = KeyPair.new()
+        #
+        address = self.create_wallet_address(kp)
+        return self
 
 
 if __name__ == "__main__":
+    wall1 = Wallet()
+    kp = KeyPair.new()
+    wall1.create_wallet_address(kp)
+    #print(wall1.addresses)
 
-    window_thread = threading.Thread(target=lambda: run())  # PySimpleGUI
+    wallet_fp = Path(__file__).parent.parent / "wallet.der"
+    #print(wallet_fp)
+    wall1.save_to_der(wallet_fp)
 
-    window_thread.start()
+    wall2 = Wallet()
+    wall2.load_from_der(wallet_fp)
+    #print(wall2.addresses)
+
+    print("Wallet1:", wall1.addresses)
+    print("Wallet2:", wall2.addresses)
