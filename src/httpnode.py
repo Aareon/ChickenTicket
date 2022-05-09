@@ -198,7 +198,9 @@ class HTTPNode:
             
             self.peers.append(p)
             connected = True
-            self.connect_cb(len(self.peers))
+            nconns = len(self.peers)
+            print(f"Calling connection callback: {nconns}")
+            self.connect_cb(nconns)
         except Exception as e:
             print(f"{request.remote_addr} failed to connect -", type(e), str(e))
             connected = False
