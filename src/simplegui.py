@@ -88,10 +88,9 @@ class App:
         
         # create the node
         self.node = HTTPNode(
-            wallet=self.wallet, config=Config, peers_list=self.peers_list
+            wallet=self.wallet, config=Config, peers_list=self.peers_list, connect_cb=self.connections_changed
         )
         self.node.setup()
-        self.connect_cb = self.connections_changed  # accepts nconns
         self.node_thread = threading.Thread(
             target=lambda: self.node.run(), daemon=True
         )  # flask thread
@@ -121,6 +120,7 @@ class App:
 
     def connections_changed(self, nconns):
         """Called by node when number of connections changes"""
+        print("Connections changed. Updating label")
         self.main_window["-connections-"].Update(f"{nconns} connections")
 
     def show_recovery_phrase(self):
@@ -266,6 +266,7 @@ class App:
                     self.main_window.close()
                     win.close()
                     self.show_settings_window()
+                    self.show_main_window()
 
             elif event == "-done-":
                 break
