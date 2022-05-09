@@ -16,6 +16,8 @@ from httpnode import HTTPNode
 from keys import KeyPair
 from wallet import Wallet
 
+from copy import deepcopy
+
 WALLET = None
 AVAILABLE = 0
 PENDING = 0
@@ -74,15 +76,17 @@ class App:
         if not self.wallet_fp.exists():
             self.wallet_fp = Path(sg.popup_get_folder("Select wallet folder"))
 
-            if not (wallet_fp / "wallet.der").exists():
+            if not (self.wallet_fp / "wallet.der").exists():
                 # Create new wallet
-                self.new_wallet()
+                self.show_new_wallet()
             else:
                 # Loading existing wallet
                 self.wallet = Wallet.load_from_der(self.wallet_fp)
         else:
             # Wallet exists in default location
             self.wallet = Wallet.load_from_der(self.wallet_fp)
+
+        self.show_main_window()
 
         # create the node
         self.node = HTTPNode(
@@ -94,6 +98,7 @@ class App:
         )  # flask thread
         # self.node_thread.start()
 
+    def show_main_window(self):
         self.main_window = self.make_main_window()
         while True:
             event, values = self.main_window.read()
@@ -121,8 +126,8 @@ class App:
         title = "Recovery phrase"
         win = sg.Window(
             f"{title} - {self.__name__} {VERSION}",
-            self.recovery_phrase_layout().finalize(),
-        )
+            self.recovery_phrase_layout(),
+        ).finalize()
         word_list = generate_recovery_phrase()
         win["-words-"].update(" ".join(w for w in word_list))
         while True:
@@ -130,11 +135,11 @@ class App:
             if event == sg.WIN_CLOSED:
                 # TODO create method to confirm exit
                 if sg.popup("Are you sure you want to exit?", button_type=1) == "Yes":
-                    sys.exit(1)
+                    sys.exit(0)
                 else:
-                    self.recovery_phrase()
+                    self.show_recovery_phrase()
             elif event == "-refresh-":
-                self.recovery_phrase()
+                self.show_recovery_phrase()
             elif event == "-next-":
                 break
         win.close()
@@ -142,11 +147,13 @@ class App:
 
     def show_confirm_phrase(self, word_list):
         title = "Confirm recovery phrase"
+        words = deepcopy(word_list)
         win = sg.Window(
             f"{title} - {self.__name__} {VERSION}",
-            self.confirm_recovery_phrase_layout(),
+            self.confirm_recovery_phrase_layout(word_list),
         )
-        phrase = " ".join(word_list)
+
+        phrase = " ".join(words)
         words = ""
         while True:
             event, values = win.read()
@@ -257,8 +264,8 @@ class App:
                     # reset windows
                     self.main_window.close()
                     win.close()
-                    self.main_window = self.make_main_window()
                     self.show_settings_window()
+
             elif event == "-done-":
                 break
 
@@ -320,16 +327,18 @@ class App:
 
                 elif values["-radio2-"]:
                     # new with password encryption and keyphrase
-                    self.new_password()
+                    pwd = self.show_new_password()
 
                 elif values["-radio3-"]:
                     # new with no password (still uses keyphrase)
                     # TODO
-                    word_list = self.recovery_phrase()
-                    phrase = self.confirm_phrase(word_list)
+                    word_list = self.show_recovery_phrase()
+                    phrase = self.show_confirm_phrase(word_list)
                     kp = KeyPair.from_seed(phrase)
                     self.wallet = Wallet.create_new(kp)
                     self.wallet.save_to_der(self.wallet_fp / "wallet.der")
+                    break
+        win.close()
 
     def main_window_layout(self):
         # fmt: off
@@ -413,9 +422,8 @@ class App:
         # fmt: on
         return layout
 
-    def confirm_recovery_phrase_layout(self):
+    def confirm_recovery_phrase_layout(self, word_list):
         # TODO make buttons disperse evenly
-        # fmt: off
         words = word_list
 
         rows = [[], [], []]
@@ -426,6 +434,7 @@ class App:
                 rows[i].append(sg.Button(words.pop(n), key=f"-word{x}-"))
                 x += 1
 
+        # fmt: off
         layout = [
             [sg.Text("Confirm your recovery phrase", font=("Arial 10 bold"))],
             [sg.Multiline(no_scrollbar=True, disabled=True, size=(30, 3), key="-words-")],
