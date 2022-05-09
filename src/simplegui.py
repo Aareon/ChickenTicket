@@ -235,7 +235,7 @@ class App:
         qr = qrcode.make(address, box_size=6)
         if not IMAGES_DIR.exists():
             images_dir.mkdir(parents=True)
-        qr.save(IMAGES_DIR / "addressqr.png")
+        qr.save(IMAGES_DIR / f"{address}.png")
 
         while True:  # receive window loop
             event, _ = win.read()
