@@ -38,8 +38,9 @@ class Wallet:
 
         # generate the addresses list,
         # joining the keypair as the 2nd element for ease of use
+        cls = cls()
         for kp in kps:
-            cls.create_wallet_address(cls, kp)
+            cls.create_wallet_address(kp)
 
         return cls
 
@@ -56,18 +57,16 @@ class Wallet:
 
     def create_wallet_address(self, kp: KeyPair):
         address = Address.new(kp)
-        if hasattr(self, "addresses"):
-            self.addresses.append([address, kp])
-        else:
-            self.addresses = [[address, kp]]
+        self.addresses.append([address, kp])
         return address
 
-    def create_new(self, kp: KeyPair = None):
+    @classmethod
+    def create_new(cls, kp: KeyPair = None):
         if kp is None:
             kp = KeyPair.new()
-        #
-        address = self.create_wallet_address(kp)
-        return self
+        cls = cls()
+        address = cls.create_wallet_address(kp)
+        return cls
 
 
 if __name__ == "__main__":
