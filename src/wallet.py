@@ -17,7 +17,8 @@ class Wallet:
         self.aliases = []
         self.addresses = []
 
-    def load_from_der(self, path: Path):
+    @classmethod
+    def load_from_der(cls, path: Path):
         """Load a wallet.der from filepath `path`
         wallet.der contains a list of private keys
 
@@ -28,7 +29,7 @@ class Wallet:
                 privs = f.read().splitlines()
         except FileNotFoundError as exc:
             raise WalletException(str(exc))
-        
+
         # using loaded priv keys, generate addresses associated with them
         # this requires recreating the KeyPair first
         kps = []
@@ -38,9 +39,9 @@ class Wallet:
         # generate the addresses list,
         # joining the keypair as the 2nd element for ease of use
         for kp in kps:
-            self.create_wallet_address(kp)
-        
-        return self
+            cls.create_wallet_address(cls, kp)
+
+        return cls
 
     def save_to_der(self, path: Path):
         """Save a wallet.der to filepath `path`
@@ -55,9 +56,12 @@ class Wallet:
 
     def create_wallet_address(self, kp: KeyPair):
         address = Address.new(kp)
-        self.addresses.append([address, kp])
+        if hasattr(self, "addresses"):
+            self.addresses.append([address, kp])
+        else:
+            self.addresses = [[address, kp]]
         return address
-    
+
     def create_new(self, kp: KeyPair = None):
         if kp is None:
             kp = KeyPair.new()
@@ -70,15 +74,15 @@ if __name__ == "__main__":
     wall1 = Wallet()
     kp = KeyPair.new()
     wall1.create_wallet_address(kp)
-    #print(wall1.addresses)
+    # print(wall1.addresses)
 
     wallet_fp = Path(__file__).parent.parent / "wallet.der"
-    #print(wallet_fp)
+    # print(wallet_fp)
     wall1.save_to_der(wallet_fp)
 
     wall2 = Wallet()
     wall2.load_from_der(wallet_fp)
-    #print(wall2.addresses)
+    # print(wall2.addresses)
 
     print("Wallet1:", wall1.addresses)
     print("Wallet2:", wall2.addresses)
