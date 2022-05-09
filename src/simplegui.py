@@ -85,9 +85,7 @@ class App:
         else:
             # Wallet exists in default location
             self.wallet = Wallet.load_from_der(self.wallet_fp)
-
-        self.show_main_window()
-
+        
         # create the node
         self.node = HTTPNode(
             wallet=self.wallet, config=Config, peers_list=self.peers_list
@@ -95,9 +93,11 @@ class App:
         self.node.setup()
         self.connect_cb = self.connections_changed  # accepts nconns
         self.node_thread = threading.Thread(
-            target=lambda: node.run(), daemon=True
+            target=lambda: self.node.run(), daemon=True
         )  # flask thread
-        # self.node_thread.start()
+        self.node_thread.start()
+
+        self.show_main_window()
 
     def show_main_window(self):
         self.main_window = self.make_main_window()
