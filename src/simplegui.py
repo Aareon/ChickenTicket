@@ -67,6 +67,8 @@ class App:
 
         with open(PEERS_LIST) as f:
             self.peers_list = f.readlines()
+        
+        self.nconns = 0
 
     def run(self):
         self.gui_thread.start()
@@ -121,7 +123,12 @@ class App:
     def connections_changed(self, nconns):
         """Called by node when number of connections changes"""
         print("Connections changed. Updating label")
-        self.main_window["-connections-"].Update(f"{nconns} connections")
+        self.nconns = nconns
+        try:
+            self.main_window["-connections-"].Update(f"{nconns} connections")
+        except AttributeError:
+            # connections changed before main window is created
+            pass
 
     def show_recovery_phrase(self):
         title = "Recovery phrase"
@@ -352,7 +359,7 @@ class App:
             [sg.HSeparator()],
             [sg.Text("Total:"), sg.Text("0 CHKN", font=("Arial 10 bold"), key='-total-')],
             [sg.Button("Send", key="-send-"), sg.VSeperator(), sg.Button("Receive", key="-receive-"), sg.VSeperator(), sg.Button("Settings", key='-settings-')],
-            [sg.Text("Height: 0", font="Arial 9"), sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text("0 connections", key='-connections-')]
+            [sg.Text("Height: 0", font="Arial 9"), sg.ProgressBar(100, orientation='h', size=(20, 20), key='-sync progress-'), sg.Text(f"{self.nconns} connections", key='-connections-')]
         ]
         # fmt: on
         return layout
