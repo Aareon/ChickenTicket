@@ -106,12 +106,14 @@ class HTTPNode:
         peers_list: List = [],
         wallet=None,
         config=Config,
+        connect_cb=None
     ):
         self.host = host
         self.port = port
         self.peers_list = peers_list
         self.wallet = wallet
         self.config = config
+        self.connect_cb = connect_cb  # callback to call when connections have changed
 
         self.app = FlaskAppWrapper(self.host, self.port)
 
@@ -119,8 +121,6 @@ class HTTPNode:
         self.peers: List[HTTPPeer] = []
         self.is_synced = False  # run `node.sync_chain()`
         self.synced_height = 0  # current height that has been synced
-
-        self.connect_cb = None  # callback to call when connections have changed
 
     def setup(self):
         # setup node endpoints
@@ -188,6 +188,7 @@ class HTTPNode:
         return self
 
     def connect(self):
+        print(f"Callback: {self.connect_cb}")
         host, port = request.remote_addr, request.args.get("listen")
         print(f"Received connect signal: {host}:{port}")
         try:
@@ -198,9 +199,10 @@ class HTTPNode:
             
             self.peers.append(p)
             connected = True
-            nconns = len(self.peers)
-            print(f"Calling connection callback: {nconns}")
-            self.connect_cb(nconns)
+            if self.connect_cb is not None:
+                nconns = len(self.peers)
+                print(f"Calling connection callback: {nconns}")
+                self.connect_cb(nconns)
         except Exception as e:
             print(f"{request.remote_addr} failed to connect -", type(e), str(e))
             connected = False
@@ -230,10 +232,10 @@ class HTTPNode:
                     + "\n"
                     + f"{type(e)} {str(e)}"
                 )
-                return Response(status=500)
+                return json.dumps({"status": 500})
         except Exception as e:
             print("Failed to send get_block", type(e), str(e))
-            return Response(status=500)
+            return json.dumps({"status": 500})
 
     def choose_peers_at_height(self, height):
         """Choose peers that agree on a block at given height"""
