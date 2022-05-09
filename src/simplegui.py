@@ -93,6 +93,7 @@ class App:
             wallet=self.wallet, config=Config, peers_list=self.peers_list
         )
         self.node.setup()
+        self.connect_cb = self.connections_changed  # accepts nconns
         self.node_thread = threading.Thread(
             target=lambda: node.run(), daemon=True
         )  # flask thread
