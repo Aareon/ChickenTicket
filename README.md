@@ -60,12 +60,24 @@ $ python3 -m pip install -r requirements.txt
 $ cd chickenticket
 $ py -3 -m pip install -r requirements.txt
 ```
-
+#### Installing with Pipenv
+##### Install Pipenv
+```sh
+$ py -m pip install pipenv -U
+```
+```sh
+$ cd chickenticket
+$ pipenv install
+```
 ### How to use
 
 After installing requirements, launch the wallet with:
 ```sh
-python3 src/simplegui.py
+$ python3 src/simplegui.py
+```
+Or launch using Pipenv environment
+```sh
+$ pipenv run python3 src/simplegui.py
 ```
 Wallet setup is automated and will guide you through the process.
 
