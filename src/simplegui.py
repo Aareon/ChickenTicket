@@ -282,7 +282,7 @@ class App:
 
     def show_new_password(self):
         title = "New password"
-        win = sg.Window(
+        pwd_win = sg.Window(
             f"{title} - {self.__name__} {VERSION}", self.new_password_layout()
         )
 
