@@ -242,7 +242,7 @@ class App:
         address = self.wallet.addresses[0][0]
         qr = qrcode.make(address, box_size=6)
         if not IMAGES_DIR.exists():
-            images_dir.mkdir(parents=True)
+            IMAGES_DIR.mkdir(parents=True)
         qr.save(IMAGES_DIR / f"{address}.png")
 
         while True:  # receive window loop
