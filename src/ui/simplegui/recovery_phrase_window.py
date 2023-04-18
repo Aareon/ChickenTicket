@@ -29,7 +29,7 @@ class RecoveryPhraseWindow:
         self.title = "ChickenTicket - Recovery Phrase"
         self.setup()
         self.window = sg.Window(self.title, self.layout)
-    
+
     def setup(self) -> None:
         # fmt: off
         word_list = generate_recovery_phrase()
@@ -40,7 +40,6 @@ class RecoveryPhraseWindow:
             [sg.Button("Refresh", key="-refresh-"), sg.HSeparator(), sg.Button("Next", key="-next-")]
         ]
         # fmt: on
- 
 
 
 if __name__ == "__main__":

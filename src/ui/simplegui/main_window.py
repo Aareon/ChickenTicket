@@ -14,7 +14,7 @@ class MainWindow:
         self.title = "ChickenTicket"
         self.setup()
         self.window = sg.Window(self.title, self.layout)
-    
+
     def setup(self) -> None:
         # fmt: off
         sync_text = "(Out of sync)" if not self.parent.IN_SYNC else "(In sync)"
