@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 ecdsa = "==0.17.0"
 flask = "==2.1.2"
-pillow = "==9.1.0"
+pillow = "==9.3.0"
 base58 = "==2.1.1"
 requests = "==2.27.1"
 qrcode = "==7.3.1"
