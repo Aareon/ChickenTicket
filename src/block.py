@@ -1,5 +1,8 @@
 from dataclasses import dataclass
+from decimal import Decimal
+
 from trie import HexaryTrie
+
 from crypto.chicken import chicken_hash
 from utils.time_tools import get_timestamp
 
@@ -85,6 +88,24 @@ class Block:
             "difficulty": self.difficulty,
         }
 
+    def __str__(self):
+        """Returns a JSON string representation of the block."""
+        return self.json()
+
+    def json(self):
+        """Serializes the block into a JSON string."""
+        return json.dumps(self.to_dict(), sort_keys=True)
+    
+    def hash(self):
+        """
+        Calculates and sets the block's proof.
+
+        Returns:
+            str: The hexadecimal string representing the block's hash.
+        """
+        self.proof = chicken_hash(json.dumps(self.to_dict()).encode()).hex()
+        return self.proof
+
     def add_transaction(self, transaction):
         """
         Adds a transaction to the block.
@@ -122,29 +143,36 @@ class Block:
         traverse_node(root_node)
 
         return transactions_list
+    
+    def fetch_output_amount(self, transaction_hash: str, output_index: int) -> Decimal:
+        """
+        Fetches the output amount for a given transaction hash and output index.
+
+        Args:
+            transaction_hash (str): The hash of the transaction.
+            output_index (int): The index of the output within the transaction.
+
+        Returns:
+            Decimal: The amount associated with the specified transaction output.
+        """
+        transaction_key_bytes = bytes.fromhex(transaction_hash)
+
+        # Start traversal from the root to find the transaction
+        try:
+            # Retrieve the serialized transaction data directly if possible
+            transaction_bytes = self.transactions_trie[transaction_key_bytes]
+            transaction_data = json.loads(transaction_bytes.decode())
+            output_amount = transaction_data['outputs'][output_index]['amount']
+            return Decimal(output_amount)
+        except KeyError:
+            raise ValueError("Transaction not found in trie.")
+        except IndexError:
+            raise ValueError("Invalid output index for transaction.")
 
     def calculate_difficulty(self):
         """Calculates and returns the difficulty for the block. Currently a placeholder."""
         return 1
 
-    def hash(self):
-        """
-        Calculates and sets the block's proof.
-
-        Returns:
-            str: The hexadecimal string representing the block's hash.
-        """
-        self.proof = chicken_hash(json.dumps(self.to_dict()).encode()).hex()
-        return self.proof
-
     def validate(self):
         """Validates the block. Currently a placeholder."""
         pass
-
-    def __str__(self):
-        """Returns a JSON string representation of the block."""
-        return self.json()
-
-    def json(self):
-        """Serializes the block into a JSON string."""
-        return json.dumps(self.to_dict(), sort_keys=True)
