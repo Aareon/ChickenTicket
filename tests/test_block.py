@@ -19,7 +19,7 @@ def basic_block():
 @pytest.fixture
 def predefined_address_str():
     """Fixture for a predefined address string."""
-    return "0x123456789000000000000000000000"
+    return "0x9af9a62f65f9f18bd13213db79A1t2"
 
 
 @pytest.fixture
