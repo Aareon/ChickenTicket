@@ -114,9 +114,7 @@ def test_fetch_output_amount(blockchain, sender_key_pair, recipient_address):
     new_block = Block(
         version=1, idx=len(blockchain.chain), previous_proof="123", nonce=100
     )
-    new_block.transactions.append(
-        transaction
-    )  # Assuming the Block class can store transactions directly
+    new_block.add_transaction(transaction)
     blockchain.add_block(new_block)
 
     # Fetch the output amount from the transaction we added
