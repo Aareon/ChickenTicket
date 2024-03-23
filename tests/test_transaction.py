@@ -26,7 +26,7 @@ def recipient_address(predefined_address_str):
 
 
 @pytest.fixture
-def valid_inputs_outputs():
+def valid_inputs_outputs(recipient_address):
     input_tx_hash = chicken_hash(b"input_tx").hex()
     inputs = [Input(tx_hash=input_tx_hash, output_id=0)]
     outputs = [Output(recipient=recipient_address, amount=Decimal('10'))]
@@ -47,7 +47,7 @@ def test_transaction_instantiation():
     assert tx.pubkey is None
 
 
-def test_add_input_output():
+def test_add_input_output(recipient_address):
     """Test adding inputs and outputs to a Transaction."""
     tx = Transaction()
     input_tx_hash = chicken_hash(b"input_tx").hex()
@@ -81,7 +81,7 @@ def test_transaction_signing():
     assert isinstance(signature, str)
 
 
-def test_validate_successful():
+def test_validate_successful(predefined_address_str):
     """Test that a transaction passes validation when correctly formed."""
     key_pair = KeyPair.new()
     tx = Transaction()
@@ -94,7 +94,7 @@ def test_validate_successful():
     assert tx.validate() is True
 
 
-def test_validate_fails_no_inputs():
+def test_validate_fails_no_inputs(predefined_address_str):
     with pytest.raises(TransactionValidationError, match="at least one input and one output"):
         tx = Transaction(outputs=[Output(recipient=Address(address=predefined_address_str), amount=Decimal('10'))], fee=Decimal('0'))
         tx.validate()
@@ -105,7 +105,7 @@ def test_validate_fails_no_outputs():
         tx = Transaction(inputs=[Input(tx_hash=input_tx_hash, output_id=0)], fee=Decimal('0'))
         tx.validate()
 
-def test_validate_fails_input_output_mismatch(key_pair, valid_inputs_outputs):
+def test_validate_fails_input_output_mismatch(key_pair, valid_inputs_outputs, recipient_address):
     inputs, _ = valid_inputs_outputs
     outputs = [Output(recipient=recipient_address, amount=Decimal('5'))]  # Less than inputs
     tx = Transaction(inputs=inputs, outputs=outputs, fee=Decimal('4'))  # Fee makes it not equal
