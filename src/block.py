@@ -1,191 +1,150 @@
 from dataclasses import dataclass
-from decimal import Decimal
-from typing import List
-
+from trie import HexaryTrie
 from crypto.chicken import chicken_hash
-from utils.merkle import MerkleTree
 from utils.time_tools import get_timestamp
 
 try:
     import ujson as json
-
-    USING_UJSON = True
 except ImportError:
     import json
-
-    USING_UJSON = False
-
-
-class BlockException(Exception):
-    """Base class for block related exceptions"""
 
 
 @dataclass
 class BlockHeader:
+    """
+    Represents the header of a blockchain block.
+
+    Attributes:
+        version (int): The version of the block.
+        previous_proof (str): The proof of the previous block in the chain.
+        state_root (str): The root hash of the state trie after this block's transactions.
+        timestamp (int): The timestamp of the block creation.
+        nonce (int): The nonce used for the proof-of-work algorithm.
+    """
     version: int
     previous_proof: str
-    merkle_root: str
+    state_root: str
     timestamp: int
     nonce: int
 
     def to_dict(self):
+        """Converts the block header into a dictionary representation."""
         return {
             "ver": self.version,
             "prev_proof": self.previous_proof,
-            "merkle": self.merkle_root,
+            "state_root": self.state_root,
             "time": self.timestamp,
             "nonce": self.nonce,
         }
 
     def json(self):
+        """Serializes the block header into a JSON string."""
         return json.dumps(self.to_dict(), sort_keys=True)
-
-    def __str__(self):
-        return self.json()
 
 
 class Block:
-    version = int
-    idx: int
-    previous_proof: str
-    merkle_root: str
-    timestamp: int
-    header: BlockHeader
+    """
+    Represents a block in the blockchain.
+
+    Attributes:
+        version (int): The version of the block.
+        idx (int): The index of the block in the chain.
+        previous_proof (str): The proof of the previous block in the chain.
+        nonce (int): The nonce used for the proof-of-work algorithm.
+        timestamp (int): The timestamp of the block creation.
+        transactions (HexaryTrie): A trie structure containing the block's transactions.
+        state_root (str): The root hash of the state trie after this block's transactions.
+        proof (None or str): The proof of work for the block.
+        difficulty (int): The difficulty target for the proof-of-work algorithm.
+        reward (str): The reward for mining the block.
+    """
 
     def __init__(self, **kwargs):
-        self.version = kwargs.get("ver") or kwargs.get("version")
+        self.version = kwargs.get("version")
         self.idx = kwargs.get("idx")
-        self.last_block = kwargs.get("last_block")
+        self.previous_proof = kwargs.get("previous_proof")
         self.nonce = kwargs.get("nonce")
         self.timestamp = kwargs.get("timestamp") or get_timestamp()
-        self.tree = MerkleTree()  # sha256 hashed merkle tree
-        self.previous_proof = kwargs.get("previous_proof")
-        self.merkle_root = kwargs.get("merkle_root")
+        self.transactions = HexaryTrie(db={})
+        self.state_root = ""
         self.proof = None
-        self.difficulty = self.calculate_difficulty()
-        self.reward = None
-        self.transactions = kwargs.get("transactions") or kwargs.get("txs") or []
-
-        if hasattr(self.last_block, "proof"):
-            self.previous_proof = last_block.proof
+        self.difficulty = kwargs.get("difficulty", 1)
+        self.reward = kwargs.get("reward", "0")
 
     def to_dict(self):
+        """Converts the block into a dictionary representation."""
         return {
+            "version": self.version,
             "idx": self.idx,
-            "header": self.header.to_dict(),
-            "last_block": self.last_block,
-            "reward": self.reward,
-            "txs": [tx.to_dict() for tx in self.transactions]
-            if self.transactions
-            else None,
-            "hash": self.proof,
+            "previous_proof": self.previous_proof,
+            "state_root": self.state_root,
+            "timestamp": self.timestamp,
+            "nonce": self.nonce,
+            "transactions": self.get_transactions_as_list(),
+            "proof": self.proof,
             "difficulty": self.difficulty,
         }
 
-    def json(self):
-        return json.dumps(self.to_dict(), sort_keys=True)
+    def add_transaction(self, transaction):
+        """
+        Adds a transaction to the block.
 
-    @property
-    def header(self):
-        if not self.tree.is_ready and self.merkle_root is None:
-            self.tree.make_tree()
+        Args:
+            transaction (Transaction): The transaction to add.
+        """
+        tx_id_bytes = bytes(transaction.hash(), 'utf-8')
+        transaction_data = transaction.json().encode()
+        self.transactions[tx_id_bytes] = transaction_data
+        self.state_root = self.transactions.root_hash.hex()
 
-        self.merkle_root = self.tree.get_merkle_root()
-        return BlockHeader(
-            self.version,
-            self.previous_proof,
-            self.merkle_root,
-            self.timestamp,
-            self.nonce,
-        )
+    def get_transactions_as_list(self) -> list:
+        """
+        Traverses the trie and constructs a list of transactions.
 
-    def add_transaction(self, tx):
-        if self.transactions is not None and tx not in self.transactions:
-            self.transactions.append(tx)
-            self.tree.add_leaf(tx.json(), True)
+        Returns:
+            A list of transactions contained within the block.
+        """
+        transactions_list = []
+        root_node = self.transactions.traverse(())
+        
+        # Traverse function to recursively visit each node
+        def traverse_node(node, prefix=tuple()):
+            if node.value:
+                # If this node has a value, it's a leaf node, decode the value (transaction data)
+                transactions_list.append(json.loads(node.value.decode('utf-8')))
+            else:
+                # This node is a branch or extension node, traverse its children
+                for sub_segment in node.sub_segments:
+                    child_prefix = prefix + sub_segment
+                    child_node = self.transactions.traverse(child_prefix)
+                    traverse_node(child_node, prefix=child_prefix)
+        
+        traverse_node(root_node)
+
+        return transactions_list
 
     def calculate_difficulty(self):
-        if isinstance(self.last_block, Block):
-            last_diff = self.last_block.difficulty
-        elif self.last_block is None:
-            self.difficulty = 20
-            return self.difficulty
-
-        # the factor to move difficulty, how much it should be moved at one time
-        offset = last_diff.difficulty // 2048
-
-        # difference between block timestamps
-        # turn the time_diff into an integer, we only care about a difference of 10 seconds
-        time_diff = (self.timestamp - self.last_block.timestamp) // 100000
-
-        # get exponent to move difficulty (i.e. up or down)
-        sign = 1 if time_diff < 10 else -1
-
-        # calculation for bomb
-        # bomb is the amount to add to diff every n blocks
-        # in this case, its every 150000th block
-        period_count = (self.last_block.index + 1) // 101000
-        period_count -= 2  # free periods, how many times the bomb can be ignored
-        bomb = 2**period_count
-
-        # calculation for target
-        self.difficulty = (self.last_block.difficulty + offset * sign) + bomb
-        return self.difficulty
+        """Calculates and returns the difficulty for the block. Currently a placeholder."""
+        return 1
 
     def hash(self):
-        data = self.to_dict()
-        # header contains the miner rewardee's address and
-        # can't be included in the process that validates the block
-        del data["header"]
-        del data["hash"]
-        self.proof = chicken_hash(json.dumps(data).encode()).hex()
+        """
+        Calculates and sets the block's proof.
+
+        Returns:
+            str: The hexadecimal string representing the block's hash.
+        """
+        self.proof = chicken_hash(json.dumps(self.to_dict()).encode()).hex()
         return self.proof
 
-    @classmethod
-    def from_dict(cls, data):
-        try:
-            return cls(**data)
-        except:
-            raise
-
     def validate(self):
-        # TODO
-        # check height
-        # check proof
-        # check transactions
-        raise NotImplementedError
+        """Validates the block. Currently a placeholder."""
+        pass
 
     def __str__(self):
+        """Returns a JSON string representation of the block."""
         return self.json()
 
-
-if __name__ == "__main__":
-    # test creating a block
-    block = Block(0, None, 69, reward=69)
-    genesis = "genesis"
-    block.previous_proof = chicken_hash((genesis + "previous_proof").encode()).hex()
-
-    from transaction import Input, Output, Transaction, TXVersion
-
-    tx = Transaction()
-    tx.idx = 0
-    tx.ver = TXVersion.ver1
-    tx.fee = Decimal("1.0")
-
-    # genesis input and output
-    genesis = "genesis"
-    ipt = Input(chicken_hash((genesis + "input").encode()).hex(), 0)
-    tx.add_input(ipt)
-
-    opt = Output("0x0", Decimal("1.0"))
-    tx.add_output(opt)
-
-    # create a key just to sign the tx
-    from keys import KeyPair
-
-    keys = KeyPair.new()
-    tx.sign(keys)
-
-    block.add_transaction(tx)
-    block.hash()
-    print(block)
+    def json(self):
+        """Serializes the block into a JSON string."""
+        return json.dumps(self.to_dict(), sort_keys=True)
