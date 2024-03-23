@@ -3,7 +3,7 @@ from typing import Optional
 from base58 import b58encode
 
 from crypto.chicken import chicken_hash
-from keys import KeyPair, PubKey
+from keys import KeyPair
 
 
 class Address:
