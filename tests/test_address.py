@@ -1,6 +1,8 @@
 import os
 import sys
 
+import pytest
+
 sys.path.append(os.path.abspath("src"))
 from address import Address
 from keys import KeyPair, PrivKey, PubKey
@@ -26,6 +28,63 @@ def test_address_generation():
     assert address.addr == expected_addr
     assert address.checksum == expected_checksum
     assert len(str(address)) == Address.LENGTH
+
+
+def test_address_constructor_and_serialization():
+    # Test valid KeyPair initialization
+    key_pair = KeyPair.new()
+    address_from_key = Address.new(key_pair)
+    assert isinstance(
+        address_from_key, Address
+    ), "Address object was not created from KeyPair."
+
+    # Serialize to string
+    address_str = str(address_from_key)
+    assert isinstance(address_str, str), "Serialization did not produce a string."
+    assert len(address_str) == Address.LENGTH, "Serialized address has incorrect length."
+
+    # Test initialization from a valid address string
+    try:
+        address_from_str = Address(address=address_str)
+    except ValueError:
+        pytest.fail(
+            "Constructor raised ValueError unexpectedly for valid address string."
+        )
+
+    # Ensure deserialized object matches the original
+    assert (
+        address_from_str.addr == address_from_key.addr
+    ), "Deserialized address does not match original."
+    assert (
+        address_from_str.prefix == address_from_key.prefix
+    ), "Prefix mismatch after deserialization."
+    assert (
+        address_from_str.checksum == address_from_key.checksum
+    ), "Checksum mismatch after deserialization."
+
+    # Test initialization with invalid inputs
+    with pytest.raises(ValueError):
+        Address()  # Neither key nor address provided
+
+    with pytest.raises(ValueError):
+        Address(address="invalid_length")  # Invalid address length
+
+    with pytest.raises(ValueError):
+        addr = f"0x{'1' * (Address.LENGTH - 2)}"
+        Address(
+            address=addr
+        )  # Correct length but likely invalid checksum
+
+
+def test_invalid_address_deserialization():
+    invalid_address_str = "0x1234567890"  # Incorrect length
+    with pytest.raises(ValueError, match=f"must be {Address.LENGTH} characters long."):
+        Address(address=invalid_address_str)
+
+    # Assuming '0x1234abcd' is an example of an invalid address format for your application
+    invalid_checksum_address = "0x" + "1" * (Address.LENGTH - 6) + "abcd"  # Correct length but incorrect checksum
+    with pytest.raises(ValueError, match="checksum"):
+        Address(address=invalid_checksum_address)
 
 
 def test_address_from_private_key_string():
