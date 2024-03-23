@@ -128,6 +128,8 @@ class KeyPair:
             raise ValueError("Private key is missing.")
         if not data:
             raise ValueError("Data is invalid.")
+        if not isinstance(data, (bytes, bytearray)):
+            raise ValueError("Data must be bytes-like.")
 
         sk = ecdsa.SigningKey.from_string(self.priv.data, curve=CURVE)
         signature = sk.sign(data)
