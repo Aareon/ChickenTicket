@@ -17,8 +17,9 @@ class Blockchain:
     def __init__(self):
         """Initializes the blockchain with a genesis block."""
         self.chain: List[Block] = []
-        self.current_transactions: List[Transaction] = []
+        self.current_transactions: List[Transaction] = []  # mempool
         self.create_genesis_block()
+        self.current_block = Block(version=1, idx=len(self.chain), previous_proof=self.chain[-1].proof, nonce=0)  # Initialize with dummy values
 
     def create_genesis_block(self):
         """Creates and adds the genesis block to the blockchain."""
@@ -92,8 +93,12 @@ class Blockchain:
         return transaction
 
     def mine(self):
-        """Simulates the mining process, creating a new block and adding it to the blockchain."""
-        # This method would include the logic to select transactions from current_transactions,
-        # find a valid nonce for the new block according to the proof-of-work algorithm,
-        # and add the newly mined block to the chain.
-        pass
+        """Simulates the mining process for the current block, adding it to the blockchain."""
+        # Example simplified mining process, in practice, include nonce finding etc.
+        self.current_block.nonce = self.find_valid_nonce(self.current_block)
+        self.add_block(self.current_block)
+
+    @staticmethod
+    def find_valid_nonce(block: Block) -> int:
+        # Dummy function for finding a nonce, replace with actual proof of work
+        return 0  # Simplified placeholder
