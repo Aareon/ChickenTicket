@@ -35,12 +35,20 @@ class Blockchain:
         self.chain.append(block)
 
     def add_transaction(self, transaction: Transaction) -> None:
-        """Adds a transaction to the list of current transactions.
+        """Adds a transaction to the list of current transactions (mempool).
 
         Args:
             transaction (Transaction): The transaction to be added.
         """
         self.current_transactions.append(transaction)
+    
+    def add_transaction_to_current_block(self, transaction: Transaction) -> None:
+        """Adds a transaction to the current block's Trie.
+
+        Args:
+            transaction (Transaction): The transaction to be added.
+        """
+        self.current_block.add_transaction(transaction)
 
     def fetch_output_amount(self, tx_hash: str, output_index: int) -> Decimal:
         """Fetches the output amount for a given transaction hash and output index from the entire blockchain.
