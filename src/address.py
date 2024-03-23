@@ -49,10 +49,13 @@ class Address:
 
         if address is not None:
             if len(address) != self.LENGTH:
-                raise ValueError(f"Address must be {self.LENGTH} characters long.")
+                raise ValueError(f"Address '{str(self)}' must be {self.LENGTH} characters long. Is {len(str(self))}")
+
             self.prefix = address[:2]
             self.addr = address[2:-4]
             self.checksum = address[-4:]
+            if not self.is_valid_address(str(self)):
+                raise ValueError(f"Address '{str(self)}' checksum is invalid.")
 
     def __repr__(self) -> str:
         """Returns a string representation of the Address instance."""
@@ -114,6 +117,7 @@ class Address:
 if __name__ == "__main__":
     kp = KeyPair.new()
     print(kp)
+    print(kp.pub.data)
     a1 = Address.new(kp)
     print(a1, "| length", len(str(a1)))
     print(f"Address: {a1} | Valid: {Address.is_valid_address(str(a1))}")
