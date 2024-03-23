@@ -1,14 +1,18 @@
 from binascii import hexlify
+
 from loguru import logger
 
 try:
     # C ext modules from pycryptodomex
     from Cryptodome.Hash import BLAKE2s
+
     USING_CRYPTODOME = True
 except ImportError:
     # Use built-in hashlib if Cryptodome is not installed
     from hashlib import blake2s
+
     USING_CRYPTODOME = False
+
 
 def chicken_hash(data: bytes) -> bytes:
     """Hash some data using BLAKE2s.
@@ -24,6 +28,7 @@ def chicken_hash(data: bytes) -> bytes:
         return BLAKE2s.new(data=data).digest()
     else:
         return blake2s(data).digest()
+
 
 if __name__ == "__main__":
     lib = "pycryptodomex" if USING_CRYPTODOME else "hashlib"
