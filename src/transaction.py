@@ -13,6 +13,10 @@ except ImportError:
 from address import Address
 from crypto.chicken import chicken_hash
 from keys import CURVE, KeyPair
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from chain import Blockchain
 
 
 @dataclass
@@ -188,14 +192,14 @@ class Transaction:
         self.check_signature_validity()
         return True
 
-    def validate_inputs_outputs(self):
+    def validate_inputs_outputs(self, chain: "Blockchain"):
         """Validates that the transaction's inputs and outputs are correctly formed."""
         if not self.inputs or not self.outputs:
             raise TransactionValidationError("Transaction must have at least one input and one output.")
 
         input_total = Decimal("0")
         for inp in self.inputs:
-            referenced_output_amount = self.fetch_output_amount(inp.tx_hash, inp.output_id)
+            referenced_output_amount = chain.fetch_output_amount(inp.tx_hash, inp.output_id)
             input_total += referenced_output_amount
 
         output_total = sum(out.amount for out in self.outputs)
