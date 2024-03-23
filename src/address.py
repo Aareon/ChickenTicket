@@ -37,12 +37,16 @@ class Address:
             raise ValueError("A key or an address must be provided.")
 
         self.pubkey: Optional[bytes] = None
-        if key is not None:
-            self.pubkey = key.pub.data
-
         self.prefix: str = ""
         self.addr: str = ""
         self.checksum: str = ""
+
+        if key is not None:
+            # Ensure the key parameter is actually a KeyPair instance.
+            if not isinstance(key, KeyPair):
+                raise TypeError("key argument must be an instance of KeyPair.")
+            self.pubkey = key.pub.data
+
         if address is not None:
             if len(address) != self.LENGTH:
                 raise ValueError(f"Address must be {self.LENGTH} characters long.")
