@@ -1,8 +1,5 @@
-import logging
 from binascii import hexlify
-
-# Set up logger
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(message)s")  # include timestamp
+from loguru import logger
 
 try:
     # C ext modules from pycryptodomex
@@ -30,18 +27,18 @@ def chicken_hash(data: bytes) -> bytes:
 
 if __name__ == "__main__":
     lib = "pycryptodomex" if USING_CRYPTODOME else "hashlib"
-    logging.debug(f"Using {lib}")
+    logger.debug(f"Using {lib}")
 
     data = b"chicken_hash_test"
     try:
         proof_hex = hexlify(chicken_hash(data))
-        logging.debug(proof_hex)
+        logger.debug(proof_hex)
         # Ensure to update the expected hash if you have a known good value for BLAKE2s
         # This example assert might need to be updated as the output will change
         # assert proof_hex == b"expected_hash_here"
     except AssertionError:
-        logging.error("Test failed!")
+        logger.error("Test failed!")
     else:
-        logging.info("Test passed!")
+        logger.info("Test passed!")
 
-    logging.info("Tests done!")
+    logger.info("Tests done!")
