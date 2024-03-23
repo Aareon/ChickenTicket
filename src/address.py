@@ -1,7 +1,10 @@
 from typing import Optional
+
 from base58 import b58encode
+
 from crypto.chicken import chicken_hash
 from keys import KeyPair, PubKey
+
 
 class Address:
     """
@@ -15,6 +18,7 @@ class Address:
         addr (str): The main part of the address.
         checksum (str): The checksum part of the address for validation.
     """
+
     LENGTH: int = 32
 
     def __init__(self, key: Optional[KeyPair] = None, address: Optional[str] = None):
@@ -31,7 +35,7 @@ class Address:
         """
         if key is None and address is None:
             raise ValueError("A key or an address must be provided.")
-        
+
         self.pubkey: Optional[bytes] = None
         if key is not None:
             self.pubkey = key.pub.data
@@ -55,7 +59,7 @@ class Address:
         return f"{self.prefix}{self.addr}{self.checksum}"
 
     @classmethod
-    def new(cls, kp: KeyPair, prefix: str = "0x") -> 'Address':
+    def new(cls, kp: KeyPair, prefix: str = "0x") -> "Address":
         """
         Generates a new Address instance from a KeyPair with an optional prefix.
 
@@ -68,11 +72,13 @@ class Address:
         """
         pub_bytes = kp.pub.data
         pub_hashed = chicken_hash(pub_bytes).hex()[:26]  # First 26 chars of the hash
-        
+
         # Compute the checksum from the hashed public key
         checksum_bytes = chicken_hash(pub_hashed.encode())
-        checksum = b58encode(checksum_bytes).decode()[:4]  # First 4 chars of the base58-encoded hash
-        
+        checksum = b58encode(checksum_bytes).decode()[
+            :4
+        ]  # First 4 chars of the base58-encoded hash
+
         addr = pub_hashed  # Use the hashed public key directly as the address part
         return cls(address=f"{prefix}{addr}{checksum}")
 
@@ -90,14 +96,15 @@ class Address:
         """
         if len(address) != Address.LENGTH or not address.startswith(expected_prefix):
             return False
-        
-        addr_part = address[len(expected_prefix):-4]
+
+        addr_part = address[len(expected_prefix) : -4]
         checksum_part = address[-4:]
-        
+
         recomputed_checksum_bytes = chicken_hash(addr_part.encode())
         recomputed_checksum = b58encode(recomputed_checksum_bytes).decode()[:4]
-        
+
         return checksum_part == recomputed_checksum
+
 
 # Example usage
 if __name__ == "__main__":
