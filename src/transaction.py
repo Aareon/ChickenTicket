@@ -1,155 +1,220 @@
 import time
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 import ecdsa
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from address import Address
 from crypto.chicken import chicken_hash
 from keys import CURVE, KeyPair
 
-try:
-    import ujson as json
-
-    USING_UJSON = True
-except ImportError:
-    import json
-
-    USING_UJSON = False
-
 
 @dataclass
 class TXVersion:
-    ver1 = 0x1
-    ver2 = 0x2
-    ver3 = 0x3
+    """Defines transaction version constants."""
+
+    ver1: int = 0x1
+    ver2: int = 0x2
+    ver3: int = 0x3
 
 
 @dataclass
 class Input:
+    """
+    Represents an input in a transaction, referring to a previous transaction's output.
+
+    Attributes:
+        tx_hash (str): The hash of the previous transaction.
+        output_id (int): The index of the output in the previous transaction.
+    """
+
     tx_hash: str
     output_id: int
 
-    def __str__(self):
-        return json.dumps(self.to_dict(), sort_keys=True)
-
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Converts the Input instance into a dictionary."""
         return {"tx": self.tx_hash, "idx": self.output_id}
 
 
 @dataclass
 class Output:
-    recipient: Address  # address the amount is to be sent to
+    """
+    Represents an output in a transaction, specifying a recipient and an amount.
+
+    Attributes:
+        recipient (Address): The address of the recipient.
+        amount (Decimal): The amount to be sent to the recipient.
+    """
+
+    recipient: Address
     amount: Decimal
 
-    def __str__(self):
-        return json.dumps(self.to_dict(), sort_keys=True)
-
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Converts the Output instance into a dictionary."""
         return {"recipient": str(self.recipient), "amount": str(self.amount)}
 
 
+class TransactionValidationError(Exception):
+    """Exception raised for errors in the transaction validation."""
+
+
 class Transaction:
-    idx: int
-    ver: TXVersion
-    timestamp: int
-    inputs: List[Input]  # tx_hash, output_id
-    outputs: List[Output]  # recipient, amount
-    fee: Decimal
-    proof: bytes
-    signature: bytes
-    pubkey: bytes
+    """
+    Represents a transaction in the blockchain.
+
+    Attributes:
+        idx (int): The index of the transaction.
+        ver (TXVersion): The version of the transaction.
+        timestamp (int): The timestamp of the transaction.
+        inputs (List[Input]): A list of inputs for the transaction.
+        outputs (List[Output]): A list of outputs for the transaction.
+        fee (Decimal): The transaction fee.
+        proof (Optional[str]): The hash of the transaction.
+        signature (Optional[str]): The signature of the transaction.
+        pubkey (Optional[bytes]): The public key associated with the transaction.
+    """
 
     def __init__(self, **kwargs):
-        self.idx = kwargs.get("idx")
-        self.ver = kwargs.get("ver") or kwargs.get("version")
-        self.timestamp = kwargs.get("timestamp") or time.time()
-        self.inputs = kwargs.get("inputs") or []
-        self.outputs = kwargs.get("outputs") or []
-        self.fee = kwargs.get("fee")
-        self.proof = kwargs.get("proof")
-        self.signature = kwargs.get("signature")
-        self.pubkey = kwargs.get("pubkey")
+        self.idx: int = kwargs.get("idx", 0)
+        self.ver: TXVersion = kwargs.get("ver", TXVersion.ver1)
+        self.timestamp: int = kwargs.get("timestamp", int(time.time()))
+        self.inputs: List[Input] = kwargs.get("inputs", [])
+        self.outputs: List[Output] = kwargs.get("outputs", [])
+        self.fee: Decimal = kwargs.get("fee", Decimal("0"))
+        self.proof: Optional[str] = kwargs.get("proof")
+        self.signature: Optional[str] = kwargs.get("signature")
+        self.pubkey: Optional[bytes] = kwargs.get("pubkey")
+    
+    def __str__(self) -> str:
+        """Returns the JSON representation of the transaction."""
+        return json.dumps(self.to_dict(), sort_keys=True)
 
-    def to_dict(self):
-        data = {
+    def add_input(self, input: Input):
+        """
+        Adds an input to the transaction.
+
+        Args:
+            input (Input): The input to add to the transaction.
+        """
+        self.inputs.append(input)
+
+    def add_output(self, output: Output):
+        """
+        Adds an output to the transaction.
+
+        Args:
+            output (Output): The output to add to the transaction.
+        """
+        self.outputs.append(output)
+    
+    def get_all_transactions(self):
+        transactions = []
+
+        def _traverse_node(node_prefix):
+            node = self.transactions.traverse(node_prefix)
+
+            # If it's a leaf node, decode and append the transaction
+            if node.is_leaf:
+                # Assuming transaction data is stored directly at leaves
+                transactions.append(json.loads(node.value.decode()))
+            else:
+                # Otherwise, recursively traverse through sub-segments (children)
+                for sub_segment in node.sub_segments:
+                    _traverse_node(node_prefix + sub_segment)
+
+        # Start traversal from the root
+        _traverse_node(())
+        return transactions
+
+    def to_dict(self) -> dict:
+        """Converts the Transaction instance into a dictionary."""
+        return {
             "idx": self.idx,
             "ver": self.ver,
             "time": self.timestamp,
-            "in": [inp.to_dict() for inp in self.inputs],
-            "out": [out.to_dict() for out in self.outputs],
+            "inputs": [inp.to_dict() for inp in self.inputs],
+            "outputs": [out.to_dict() for out in self.outputs],
             "fee": str(self.fee),
-            "hash": self.proof,
-            "sig": self.signature,
-            "pub": str(self.pubkey),
+            "proof": self.proof,
+            "signature": self.signature,
+            "pubkey": self.pubkey.hex() if self.pubkey else None,
         }
-        return data
-
-    def json(self):
+    
+    def json(self) -> str:
+        """Serializes the transaction to a JSON string."""
         return json.dumps(self.to_dict(), sort_keys=True)
 
-    def __repr__(self):
-        return self.json()
-
-    def hash(self):
-        data = self.to_dict()
-        del data["hash"]
-        del data["sig"]
-        del data["pub"]
-        self.proof = chicken_hash(json.dumps(data, sort_keys=True).encode()).hex()
+    def hash(self) -> str:
+        """Calculates and returns the hash of the transaction."""
+        self.proof = chicken_hash(
+            json.dumps(self.to_dict(), sort_keys=True).encode()
+        ).hex()
         return self.proof
 
-    def add_input(self, input):
-        if not hasattr(self, "inputs"):
-            self.inputs = [input]
-            return
-        self.inputs.append(input)
-
-    def add_output(self, output):
-        if not hasattr(self, "outputs"):
-            self.outputs = [output]
-            return
-        self.outputs.append(output)
-
     def sign(self, key: KeyPair):
-        if not hasattr(self, "proof") or self.proof is None:
+        """
+        Signs the transaction using a given KeyPair.
+
+        Args:
+            key (KeyPair): The KeyPair to sign the transaction with.
+
+        Returns:
+            The signature as a hexadecimal string.
+        """
+        if self.proof is None:
             self.hash()
-        if isinstance(key, KeyPair):
-            priv_key = key.priv
-            self.pubkey = key.pub
-        elif isinstance(key, [bytes, str]):
-            priv_key = key
-        else:
-            raise TypeError(f"cannot sign transaction with key: {key}")
-        sk = ecdsa.SigningKey.from_string(bytes.fromhex(str(priv_key)), curve=CURVE)
-        self.signature = sk.sign(bytes(str(self), encoding="utf-8")).hex()
+        sk = ecdsa.SigningKey.from_string(key.priv.data, curve=CURVE)
+        self.signature = sk.sign(json.dumps(self.to_dict()).encode("utf-8")).hex()
+        self.pubkey = key.pub.data
         return self.signature
 
+    def validate(self) -> bool:
+        """
+        Validates the transaction for correctness and integrity.
 
-if __name__ == "__main__":
-    # test creating a transaction
-    tx = Transaction()
-    tx.idx = 0
-    tx.ver = TXVersion.ver1
-    tx.timestamp = int(time.time())
-    tx.fee = Decimal("1.0")
+        Raises:
+            TransactionValidationError: If the transaction fails any validation checks.
 
-    # genesis input and output
-    genesis = "genesis"
-    ipt = Input(chicken_hash((genesis + "input").encode()).hex(), 0)
-    tx.add_input(ipt)
+        Returns:
+            bool: True if the transaction is valid, False otherwise.
+        """
+        self.validate_inputs_outputs()
+        self.check_signature_validity()
+        return True
 
-    opt = Output("0x0", Decimal("1.0"))
-    tx.add_output(opt)
+    def validate_inputs_outputs(self):
+        """Validates that the transaction's inputs and outputs are correctly formed."""
+        if not self.inputs or not self.outputs:
+            raise TransactionValidationError("Transaction must have at least one input and one output.")
 
-    # test signing
-    tx.hash()
-    # tx.sign() will automatically hash the transaction if not already done so.
-    # Calling it explicitly is the preferred behavior, though.
-    keys = KeyPair.new()
-    tx.sign(keys)
-    # I'm attempting to make everything easily printable for not only
-    # debugging purposes, but for message serialization purposes
-    # as well
-    print(tx)
+        input_total = Decimal("0")
+        for inp in self.inputs:
+            referenced_output_amount = self.fetch_output_amount(inp.tx_hash, inp.output_id)
+            input_total += referenced_output_amount
+
+        output_total = sum(out.amount for out in self.outputs)
+
+        if input_total != output_total + self.fee:
+            raise TransactionValidationError("Input totals must equal output totals plus transaction fee.")
+
+    def check_signature_validity(self):
+        """
+        Verifies the transaction's signature against the public key and the transaction hash.
+
+        Raises:
+            TransactionValidationError: If the signature is invalid.
+        """
+        if not self.signature or not self.pubkey:
+            raise TransactionValidationError("Transaction must be signed.")
+        
+        try:
+            vk = ecdsa.VerifyingKey.from_string(self.pubkey, curve=CURVE)
+            vk.verify(bytes.fromhex(self.signature), self.hash().encode())
+        except ecdsa.BadSignatureError:
+            raise TransactionValidationError("Signature verification failed.")
