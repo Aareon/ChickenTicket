@@ -1,15 +1,16 @@
-import sys
 import os
+import sys
 
-sys.path.append(os.path.abspath('src'))
+sys.path.append(os.path.abspath("src"))
 from address import Address
-from keys import KeyPair, PubKey, PrivKey
+from keys import KeyPair, PrivKey, PubKey
+
 
 def test_address_generation():
     # Assuming you have a way to generate or specify a deterministic KeyPair
     # For the sake of example, let's pretend we can directly use a known public key
-    known_pub_key = PubKey(data=b'known_public_key_bytes')
-    known_priv_key = PrivKey(data=b'known_private_key_bytes')
+    known_pub_key = PubKey(data=b"known_public_key_bytes")
+    known_priv_key = PrivKey(data=b"known_private_key_bytes")
     kp = KeyPair(pub=known_pub_key, priv=known_priv_key)
 
     # Generate address
@@ -29,8 +30,10 @@ def test_address_generation():
 
 def test_address_from_private_key_string():
     # Known private key string (hexadecimal)
-    known_priv_key_str = "f00e54641c1f57cc9e727ff83fa36b17b9c2f93aceb2b043e0a6b79015f50f27"
-    
+    known_priv_key_str = (
+        "f00e54641c1f57cc9e727ff83fa36b17b9c2f93aceb2b043e0a6b79015f50f27"
+    )
+
     # Generate KeyPair from the known private key string
     kp = KeyPair.from_privkey_str(known_priv_key_str)
 
@@ -46,4 +49,74 @@ def test_address_from_private_key_string():
     assert address.prefix == expected_prefix, "Prefix does not match expected value"
     assert address.addr == expected_addr, "Address part does not match expected value"
     assert address.checksum == expected_checksum, "Checksum does not match expected value"
-    assert len(str(address)) == Address.LENGTH, "Total address length does not match expected value"
+    assert (
+        len(str(address)) == Address.LENGTH
+    ), "Total address length does not match expected value"
+
+
+def test_valid_address():
+    """
+    Test to ensure that an address generated from a deterministic key pair
+    is correctly identified as valid.
+    """
+    # Generate a deterministic KeyPair from a predefined seed
+    seed = "a fixed seed value for testing"
+    kp = KeyPair.from_seed(seed)
+
+    # Generate an address from the deterministic KeyPair
+    address = Address.new(kp)
+    address_str = str(address)
+
+    # Validate the generated address
+    is_valid = Address.is_valid_address(address_str)
+    assert is_valid, f"Address: {address_str} was incorrectly identified as invalid."
+
+
+def test_invalid_address():
+    # Assuming '0x1234abcd' is an example of an invalid address format for your application
+    invalid_address = "0x1234abcd"  # Incorrect length and potentially incorrect checksum
+
+    # Validate the incorrect address
+    assert not Address.is_valid_address(
+        invalid_address
+    ), "Invalid address was incorrectly identified as valid."
+
+
+def test_address_boundary_conditions():
+    """
+    Test addresses at various boundary conditions to ensure the address validation
+    correctly identifies valid and invalid addresses.
+    """
+    # Generate a deterministic KeyPair from a predefined seed
+    seed = "a fixed seed value for testing"
+    kp = KeyPair.from_seed(seed)
+
+    # Generate address from KeyPair
+    address = Address.new(kp)
+    address_str = str(address)
+
+    # Test 1: Altering the last character (assumed to affect checksum)
+    altered_checksum_address = address_str[:-1] + "x"
+    assert not Address.is_valid_address(
+        altered_checksum_address
+    ), "Address with altered checksum incorrectly passed validation."
+
+    # Test 2: Incorrect prefix but correct length and checksum
+    invalid_prefix_address = (
+        "1Y" + address_str[2:]
+    )  # Replace the prefix with an invalid one
+    assert not Address.is_valid_address(
+        invalid_prefix_address
+    ), "Address with incorrect prefix incorrectly passed validation."
+
+    # Test 3: Correct prefix and checksum but one character too short
+    short_address = address_str[:-1]
+    assert not Address.is_valid_address(
+        short_address
+    ), "Shortened address incorrectly passed validation."
+
+    # Test 4: Correct prefix and checksum but one character too long
+    long_address = address_str + "f"
+    assert not Address.is_valid_address(
+        long_address
+    ), "Lengthened address incorrectly passed validation."
