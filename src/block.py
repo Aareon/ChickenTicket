@@ -160,7 +160,7 @@ class Block:
         # Start traversal from the root to find the transaction
         try:
             # Retrieve the serialized transaction data directly if possible
-            transaction_bytes = self.transactions_trie[transaction_key_bytes]
+            transaction_bytes = self.transactions[transaction_key_bytes]
             transaction_data = json.loads(transaction_bytes.decode())
             output_amount = transaction_data['outputs'][output_index]['amount']
             return Decimal(output_amount)
