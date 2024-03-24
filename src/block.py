@@ -219,7 +219,7 @@ if __name__ == "__main__":
         chain.mine()
         
         # Log the newly mined block
-        logger.info(f"Block {block_num} mined and added to the blockchain.")
+        logger.info(f"Block {block_num} mined and added to the blockchain.\n{chain.chain[-1]}")
 
     # Display the final state of the blockchain
     for idx, block in enumerate(chain.chain):
