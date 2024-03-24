@@ -16,6 +16,13 @@ log_file_path = logs_dir / "simulation_{time}.log"
 logger.add(log_file_path, rotation="10 MB")  # Rotate the file every 10 MB
 
 
+def format_time_delta(seconds):
+    """Convert a time delta in seconds to a formatted string 'Xh Ym Zs'."""
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
+
+
 def calculate_simulated_block_time(hash_power, difficulty):
     """
     Calculates simulated block time based on hash power and difficulty.
@@ -61,7 +68,7 @@ class BlockchainSimulator:
         """Custom logging function to include scaling factor in the log message."""
         message = f"Alpha={alpha}, Scaling={scaling_factor}, {message}"
         if actual_time is not None:
-            message += f", Actual Time={actual_time:.2f}s"
+            message += f", Actual Time={actual_time}"
         logger.info(message)
 
     def simulate(self):
@@ -95,6 +102,7 @@ class BlockchainSimulator:
 
             end_time = time.time()
             actual_time_taken = end_time - start_time
+            formatted_delta_time = format_time_delta(actual_time_taken)
 
             last_block = blockchain.chain[-1]
             difficulties.append(last_block.difficulty)
@@ -104,7 +112,7 @@ class BlockchainSimulator:
             block_times.append(simulated_block_time)
 
             # Log each block's mining outcome
-            self.custom_log(f"Mined block {i+1} with difficulty {last_block.difficulty} in {simulated_block_time}s", blockchain.alpha, scaling_factor, actual_time=actual_time_taken)
+            self.custom_log(f"Mined block {i+1} with difficulty {last_block.difficulty} in {simulated_block_time}s", blockchain.alpha, scaling_factor, actual_time=formatted_delta_time)
 
         return difficulties, block_times
 
@@ -121,6 +129,6 @@ class BlockchainSimulator:
         plt.show()
 
 # Example usage
-scaling_factors = [0.08, 0.1, 0.12]
+scaling_factors = [0.05, 0.6, 0.65]
 simulator = BlockchainSimulator(scaling_factors, simulation_rounds=500)
 simulator.simulate()
