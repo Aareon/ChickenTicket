@@ -25,6 +25,10 @@ class Blockchain:
         self.block_generation_interval = 30  # Target time for block generation in seconds
         self.ema_block_time = self.TARGET_BLOCK_TIME  # Initial EMA equals target block time
         self.alpha = 0.01  # Smoothing factor for EMA calculation
+        self.min_alpha = 0.01  # Minimum alpha value
+        self.max_alpha = 0.2  # Maximum alpha value
+        self.alpha_sensitivity = 0.05  # Sensitivity of alpha adjustments
+        self.last_block_time = None  # Store the last block time for comparison
         
         self.create_genesis_block()
 
@@ -104,10 +108,25 @@ class Blockchain:
 
         return new_difficulty
     
+    def adjust_alpha(self, time_difference):
+        """Adjusts the alpha value based on the difference in block times."""
+        # Normalize time difference based on a predefined scale (e.g., TARGET_BLOCK_TIME)
+        normalized_diff = time_difference / self.TARGET_BLOCK_TIME
+        # Adjust alpha based on the time difference and sensitivity
+        delta_alpha = normalized_diff * self.alpha_sensitivity
+        # Ensure alpha stays within the defined range
+        self.alpha = max(self.min_alpha, min(self.max_alpha, self.alpha + delta_alpha))
+        logger.info(f"Adjusted alpha to: {self.alpha}")
+    
     def update_ema(self, actual_time):
         """Updates the Exponential Moving Average (EMA) of the block times."""
+        if self.last_block_time is not None:
+            time_difference = abs(actual_time - self.last_block_time)
+            self.adjust_alpha(time_difference)
+
         self.ema_block_time = (self.alpha * actual_time) + ((1 - self.alpha) * self.ema_block_time)
-        logger.info(f"Updated EMA block time: {self.ema_block_time}")
+        logger.info(f"Updated EMA block time: {self.ema_block_time} with alpha: {self.alpha}")
+        self.last_block_time = actual_time
     
     def adjust_difficulty(self, block: Block):
         """Adjusts the difficulty based on recent block times."""
