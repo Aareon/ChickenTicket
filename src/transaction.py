@@ -12,11 +12,9 @@ except ImportError:
 
 from address import Address
 from crypto.chicken import chicken_hash
-from keys import CURVE, KeyPair
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from chain import Blockchain
+from config import Config
+from keys import KeyPair
+from validator import TransactionValidator
 
 
 @dataclass
@@ -64,10 +62,6 @@ class Output:
         return {"recipient": str(self.recipient), "amount": str(self.amount)}
 
 
-class TransactionValidationError(Exception):
-    """Exception raised for errors in the transaction validation."""
-
-
 class Transaction:
     """
     Represents a transaction in the blockchain.
@@ -94,6 +88,8 @@ class Transaction:
         self.proof: Optional[str] = kwargs.get("proof")
         self.signature: Optional[str] = kwargs.get("signature")
         self.pubkey: Optional[bytes] = kwargs.get("pubkey")
+
+        self.validator = TransactionValidator()
     
     def __str__(self) -> str:
         """Returns the JSON representation of the transaction."""
@@ -118,7 +114,7 @@ class Transaction:
         self.outputs.append(output)
     
     def get_all_transactions(self):
-        transactions = []
+        transactions_list = []
 
         def _traverse_node(node_prefix):
             node = self.transactions.traverse(node_prefix)
@@ -126,7 +122,7 @@ class Transaction:
             # If it's a leaf node, decode and append the transaction
             if node.is_leaf:
                 # Assuming transaction data is stored directly at leaves
-                transactions.append(json.loads(node.value.decode()))
+                transactions_list.append(json.loads(node.value.decode()))
             else:
                 # Otherwise, recursively traverse through sub-segments (children)
                 for sub_segment in node.sub_segments:
@@ -134,7 +130,7 @@ class Transaction:
 
         # Start traversal from the root
         _traverse_node(())
-        return transactions
+        return transactions_list
 
     def to_dict(self) -> dict:
         """Converts the Transaction instance into a dictionary."""
@@ -173,52 +169,7 @@ class Transaction:
         """
         if self.proof is None:
             self.hash()
-        sk = ecdsa.SigningKey.from_string(key.priv.data, curve=CURVE)
+        sk = ecdsa.SigningKey.from_string(key.priv.data, curve=Config.CURVE)
         self.signature = sk.sign(json.dumps(self.to_dict()).encode("utf-8")).hex()
         self.pubkey = key.pub.data
         return self.signature
-
-    def validate(self) -> bool:
-        """
-        Validates the transaction for correctness and integrity.
-
-        Raises:
-            TransactionValidationError: If the transaction fails any validation checks.
-
-        Returns:
-            bool: True if the transaction is valid, False otherwise.
-        """
-        self.validate_inputs_outputs()
-        self.check_signature_validity()
-        return True
-
-    def validate_inputs_outputs(self, chain: "Blockchain"):
-        """Validates that the transaction's inputs and outputs are correctly formed."""
-        if not self.inputs or not self.outputs:
-            raise TransactionValidationError("Transaction must have at least one input and one output.")
-
-        input_total = Decimal("0")
-        for inp in self.inputs:
-            referenced_output_amount = chain.fetch_output_amount(inp.tx_hash, inp.output_id)
-            input_total += referenced_output_amount
-
-        output_total = sum(out.amount for out in self.outputs)
-
-        if input_total != output_total + self.fee:
-            raise TransactionValidationError("Input totals must equal output totals plus transaction fee.")
-
-    def check_signature_validity(self):
-        """
-        Verifies the transaction's signature against the public key and the transaction hash.
-
-        Raises:
-            TransactionValidationError: If the signature is invalid.
-        """
-        if not self.signature or not self.pubkey:
-            raise TransactionValidationError("Transaction must be signed.")
-        
-        try:
-            vk = ecdsa.VerifyingKey.from_string(self.pubkey, curve=CURVE)
-            vk.verify(bytes.fromhex(self.signature), self.hash().encode())
-        except ecdsa.BadSignatureError:
-            raise TransactionValidationError("Signature verification failed.")
