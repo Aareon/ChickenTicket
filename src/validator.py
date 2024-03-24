@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import ecdsa
 
-from config import Config
+from .config import Config
 
 if TYPE_CHECKING:
     from chain import Blockchain

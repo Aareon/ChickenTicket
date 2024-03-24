@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import ecdsa
 from ecdsa.util import randrange_from_seed__trytryagain
 
-from config import Config
+from .config import Config
 
 CURVE = Config.CURVE
 

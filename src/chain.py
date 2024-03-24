@@ -3,11 +3,11 @@ from typing import List
 
 from loguru import logger
 
-from block import Block
-from keys import KeyPair
-from transaction import Transaction
-from utils.time_tools import get_timestamp
-from crypto.chicken import chicken_hash
+from .block import Block
+from .keys import KeyPair
+from .transaction import Transaction
+from .utils.time_tools import get_timestamp
+from .crypto.chicken import chicken_hash
 
 
 class Blockchain:
@@ -24,7 +24,7 @@ class Blockchain:
         self.difficulty = 1  # Initial difficulty
         self.block_generation_interval = 30  # Target time for block generation in seconds
         self.ema_block_time = self.TARGET_BLOCK_TIME  # Initial EMA equals target block time
-        self.alpha = 0.6  # Smoothing factor for EMA calculation
+        self.alpha = 0.01  # Smoothing factor for EMA calculation
         
         self.create_genesis_block()
 

@@ -10,11 +10,11 @@ try:
 except ImportError:
     import json
 
-from address import Address
-from crypto.chicken import chicken_hash
-from config import Config
-from keys import KeyPair
-from validator import TransactionValidator
+from .address import Address
+from .crypto.chicken import chicken_hash
+from .config import Config
+from .keys import KeyPair
+from .validator import TransactionValidator
 
 
 @dataclass

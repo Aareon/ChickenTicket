@@ -4,8 +4,8 @@ from decimal import Decimal
 from loguru import logger
 from trie import HexaryTrie
 
-from crypto.chicken import chicken_hash
-from utils.time_tools import get_timestamp
+from .crypto.chicken import chicken_hash
+from .utils.time_tools import get_timestamp
 
 try:
     import ujson as json
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     aareon_addr = Address(aareon_key_pair)
 
     # Mine a total of 5 blocks, each with a transaction
-    for block_num in range(1, 10):
+    for block_num in range(1, 20):
         # Simulate creating a transaction from Genesis to Aareon
         amount = 100 * block_num  # Vary the amount for demonstration
         transaction = chain.create_transaction(genesis_addr, aareon_addr, amount, genesis_key_pair)
