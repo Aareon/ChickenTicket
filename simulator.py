@@ -32,7 +32,11 @@ def calculate_simulated_block_time(hash_power, difficulty):
     
     # Calculate block time, ensuring it doesn't fall below a minimum threshold
     min_block_time = 1  # Minimum block time in seconds
-    block_time = max(exp(exponent) / base, min_block_time)
+
+    # Introduce randomness to the block time calculation
+    randomness_factor = random.uniform(0.8, 1.2)
+
+    block_time = max(exp(exponent) * randomness_factor / base, min_block_time)
     
     return block_time
 
