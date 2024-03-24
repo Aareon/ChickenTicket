@@ -63,7 +63,7 @@ class BlockchainSimulator:
     def simulate(self):
         results = {}
         for scaling_factor in self.scaling_factors:
-            blockchain = ConcurrentBlockchain(max_workers=16)
+            blockchain = ConcurrentBlockchain(max_workers=8)
             # Use custom_log to log the start of a simulation round
             self.custom_log("Starting simulation...", blockchain.alpha, scaling_factor)
             blockchain.scaling_factor = scaling_factor
