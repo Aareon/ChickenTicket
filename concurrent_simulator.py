@@ -5,6 +5,7 @@ from loguru import logger
 from math import exp
 import os
 from pathlib import Path
+import time
 
 # Create the logs directory path
 logs_dir = Path(os.environ["USERPROFILE"], ".chickenticket", "logs")
@@ -56,9 +57,12 @@ class BlockchainSimulator:
         self.scaling_factors = scaling_factors
         self.simulation_rounds = simulation_rounds
 
-    def custom_log(self, message, alpha, scaling_factor):
+    def custom_log(self, message, alpha, scaling_factor, actual_time=None):
         """Custom logging function to include scaling factor in the log message."""
-        logger.info(f"Alpha={alpha}, Scaling={scaling_factor}, {message}")
+        message = f"Alpha={alpha}, Scaling={scaling_factor}, {message}"
+        if actual_time is not None:
+            message += f", Actual Time={actual_time:.2f}s"
+        logger.info(message)
 
     def simulate(self):
         results = {}
@@ -83,9 +87,14 @@ class BlockchainSimulator:
             # Adjust hash power to simulate changes in the network's mining capacity
             # This could be more sophisticated based on your needs
             hash_power *= random.uniform(0.9, 1.1)  # Simulate fluctuating hash power
+            
+            start_time = time.time()
 
             # Simulate the mining process
             blockchain.mine()
+
+            end_time = time.time()
+            actual_time_taken = end_time - start_time
 
             last_block = blockchain.chain[-1]
             difficulties.append(last_block.difficulty)
@@ -95,7 +104,7 @@ class BlockchainSimulator:
             block_times.append(simulated_block_time)
 
             # Log each block's mining outcome
-            self.custom_log(f"Mined block {i+1} with difficulty {last_block.difficulty} in {simulated_block_time}s", blockchain.alpha, scaling_factor)
+            self.custom_log(f"Mined block {i+1} with difficulty {last_block.difficulty} in {simulated_block_time}s", blockchain.alpha, scaling_factor, actual_time=actual_time_taken)
 
         return difficulties, block_times
 
