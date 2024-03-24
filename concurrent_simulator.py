@@ -3,6 +3,16 @@ import matplotlib.pyplot as plt
 from src.utils.concurrency import ConcurrentBlockchain
 from loguru import logger
 from math import exp
+import os
+from pathlib import Path
+
+# Create the logs directory path
+logs_dir = Path(os.environ["USERPROFILE"], ".chickenticket", "logs")
+logs_dir.mkdir(parents=True, exist_ok=True)  # Create the directory if it does not exist
+
+# Configure loguru logger
+log_file_path = logs_dir / "simulation_{time}.log"
+logger.add(log_file_path, rotation="10 MB")  # Rotate the file every 10 MB
 
 
 def calculate_simulated_block_time(hash_power, difficulty):
@@ -46,17 +56,17 @@ class BlockchainSimulator:
         self.scaling_factors = scaling_factors
         self.simulation_rounds = simulation_rounds
 
-    def custom_log(self, message, scaling_factor):
+    def custom_log(self, message, alpha, scaling_factor):
         """Custom logging function to include scaling factor in the log message."""
-        logger.info(f"Scaling={scaling_factor}, {message}")
+        logger.info(f"Alpha={alpha}, Scaling={scaling_factor}, {message}")
 
     def simulate(self):
         results = {}
         for scaling_factor in self.scaling_factors:
+            blockchain = ConcurrentBlockchain(max_workers=16)
             # Use custom_log to log the start of a simulation round
-            self.custom_log("Starting simulation...", scaling_factor)
-            blockchain = ConcurrentBlockchain()
-            blockchain.scaling_factor = scaling_factor  # Assuming you have a way to set this in your Blockchain
+            self.custom_log("Starting simulation...", blockchain.alpha, scaling_factor)
+            blockchain.scaling_factor = scaling_factor
                 
             difficulties, block_times = self.simulate_mining(blockchain, scaling_factor)
             results[scaling_factor] = (difficulties, block_times)
@@ -85,7 +95,7 @@ class BlockchainSimulator:
             block_times.append(simulated_block_time)
 
             # Log each block's mining outcome
-            self.custom_log(f"Mined block {i+1} with difficulty {last_block.difficulty} in {simulated_block_time}s", scaling_factor)
+            self.custom_log(f"Mined block {i+1} with difficulty {last_block.difficulty} in {simulated_block_time}s", blockchain.alpha, scaling_factor)
 
         return difficulties, block_times
 
