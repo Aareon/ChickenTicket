@@ -104,7 +104,8 @@ class Blockchain:
         # Ensure the new difficulty is at least 1, and no more than 64
         new_difficulty = max(1, min(new_difficulty, 64))
 
-        logger.info(f"Adjusting difficulty from {self.difficulty} to {new_difficulty}")
+        if new_difficulty != self.difficulty:
+            logger.info(f"Adjusting difficulty from {self.difficulty} to {new_difficulty}")
 
         return new_difficulty
     
