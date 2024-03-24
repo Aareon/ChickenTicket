@@ -72,8 +72,8 @@ class Blockchain:
 
     def calculate_difficulty(self):
         """Dynamically adjusts the mining difficulty."""
-        if len(self.chain) < 2:
-            return self.difficulty  # Not enough blocks to adjust difficulty
+        if len(self.chain) % self.DIFFICULTY_ADJUSTMENT_INTERVAL != 0 or len(self.chain) < 2:
+            return self.difficulty  # Adjust difficulty only at specified intervals and if enough blocks exist
 
         # Calculate the actual mining time for the last block
         actual_time = self.chain[-1].timestamp - self.chain[-2].timestamp
@@ -84,15 +84,19 @@ class Blockchain:
 
         # Define a scaling factor for how aggressively the difficulty should adjust
         # This value may need to be fine-tuned based on the blockchain's needs
-        scaling_factor = 0.12  # adjust based on testing and requirements
+        scaling_factor = 0.12  # Adjust based on testing and requirements
 
         # Calculate the adjustment factor based on the deviation, ensuring it's within the allowed range
         adjustment_factor = max(min(deviation * scaling_factor, self.MAX_ADJUSTMENT_FACTOR), -self.MAX_ADJUSTMENT_FACTOR)
 
         # Apply the adjustment factor to the current difficulty
-        new_difficulty = self.difficulty * (1 + adjustment_factor)
-        new_difficulty = round(new_difficulty)
+        if adjustment_factor > 0:
+            new_difficulty = min(self.difficulty * (1 + adjustment_factor), self.difficulty + self.MAX_ADJUSTMENT_FACTOR)
+        else:
+            new_difficulty = max(self.difficulty * (1 + adjustment_factor), self.difficulty - self.MAX_ADJUSTMENT_FACTOR)
         
+        new_difficulty = round(new_difficulty)
+
         # Ensure the new difficulty is at least 1, and no more than 64
         new_difficulty = max(1, min(new_difficulty, 64))
 
