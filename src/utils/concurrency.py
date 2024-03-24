@@ -54,6 +54,6 @@ class ConcurrentBlockchain(Blockchain):
     def divide_nonce_space(self, start_nonce, end_nonce, workers):
         """Divides the nonce search space among workers."""
         if end_nonce is None:
-            end_nonce = 2**32
+            end_nonce = 2**64
         step = (end_nonce - start_nonce) // workers + 1
         return [(start_nonce + i * step, min(start_nonce + (i + 1) * step, end_nonce)) for i in range(workers)]
