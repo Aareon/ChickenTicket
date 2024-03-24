@@ -60,6 +60,6 @@ class BlockchainSimulator:
 
 # Example usage
 alpha_values = [0.01, 0.025, 0.3, 0.5]
-scaling_factors = [0.1, 0.12, 0.15]
+scaling_factors = [0.08, 0.1, 0.12]
 simulator = BlockchainSimulator(alpha_values, scaling_factors, simulation_rounds=500)
 simulator.simulate()
