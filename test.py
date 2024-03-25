@@ -7,8 +7,6 @@ from src.keys import KeyPair
 from src.chain import Blockchain
 from src.transaction import Transaction
 
-# Configure loguru logger
-logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
 def main():
     logger.info("Starting blockchain test script...")
