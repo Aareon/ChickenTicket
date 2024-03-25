@@ -28,11 +28,14 @@ class ConcurrentBlockchain(Blockchain):
         lowest_hash = "f" * 64
         best_result = (None, None)
         for future in concurrent.futures.as_completed(futures):
-            nonce, hash_value = future.result()
-            if nonce is not None and hash_value < lowest_hash:
-                lowest_hash = hash_value
-                best_result = (nonce, hash_value)
-                self.cancel_flag.set()  # Signal other workers to stop
+            try:
+                nonce, hash_value = future.result()
+                if nonce is not None and hash_value < lowest_hash:
+                    lowest_hash = hash_value
+                    best_result = (nonce, hash_value)
+                    self.cancel_flag.set()  # Signal other workers to stop
+            except Exception as e:
+                logger.error(f"Error in worker: {e}")
         
         logger.info(f"Best result for block {block.idx}: {best_result}")
 
@@ -41,14 +44,17 @@ class ConcurrentBlockchain(Blockchain):
     def find_nonce_in_range(self, block, start_nonce, end_nonce, worker_id):
         """Searches for a valid nonce within a given range."""
         prefix = f'{block.previous_proof}{block.state_root}{block.timestamp}'.encode()
+        logger.debug(f"Worker {worker_id} starts searching in range {start_nonce}-{end_nonce}")
         for nonce in range(start_nonce, end_nonce):
             if self.cancel_flag.is_set():  # Check the flag
+                logger.debug(f"Worker {worker_id} stopping due to cancel flag.")
                 return None, None
             guess = prefix + str(nonce).encode()
             guess_hash = chicken_hash(guess).hex()
             if guess_hash.startswith('0' * block.difficulty):
                 logger.info(f"Worker {worker_id} found the correct nonce for block {block.idx}: {nonce} - hash: {guess_hash}")
                 return nonce, guess_hash
+        logger.debug(f"Worker {worker_id} completed search without finding a valid nonce.")
         return None, None
 
     def divide_nonce_space(self, start_nonce, end_nonce, workers):
