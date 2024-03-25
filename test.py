@@ -27,7 +27,7 @@ def main():
         transaction.sign(key_pair)
         logger.info(f"Created transaction {transaction_number}: {transaction}")
         logger.info(f"Adding transaction {transaction_number} to the current block...")
-        blockchain.add_transaction_to_current_block(transaction)
+        blockchain.add_transaction(transaction)
         logger.info(f"Added transaction {transaction_number} to the current block. Current block transaction count: {len(blockchain.current_block.get_transactions_as_list())}")
 
     # Create and add the first transaction
