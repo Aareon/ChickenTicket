@@ -47,7 +47,7 @@ def main():
     sleep(1)
 
     # Simulate creating and mining more blocks to test difficulty adjustment
-    for i in range(3, 6):
+    for i in range(3, 20):
         create_and_add_transaction(f"sender{i}", f"recipient{i}", f"{i*10}.0", i)
         logger.info(f"Preparing to mine block {i}, adjusting difficulty based on network conditions. Current difficulty: {blockchain.difficulty}")
         blockchain.mine()
