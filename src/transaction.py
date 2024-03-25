@@ -73,6 +73,7 @@ class Transaction:
         inputs (List[Input]): A list of inputs for the transaction.
         outputs (List[Output]): A list of outputs for the transaction.
         fee (Decimal): The transaction fee.
+        nonce (int): The total number of transactions sent by the sender.
         proof (Optional[str]): The hash of the transaction.
         signature (Optional[str]): The signature of the transaction.
         pubkey (Optional[bytes]): The public key associated with the transaction.
@@ -85,6 +86,7 @@ class Transaction:
         self.inputs: List[Input] = kwargs.get("inputs", [])
         self.outputs: List[Output] = kwargs.get("outputs", [])
         self.fee: Decimal = kwargs.get("fee", Decimal("0"))
+        self.nonce: int = kwargs.get("nonce", 0)
         self.proof: Optional[str] = kwargs.get("proof")
         self.signature: Optional[str] = kwargs.get("signature")
         self.pubkey: Optional[bytes] = kwargs.get("pubkey")
@@ -141,6 +143,7 @@ class Transaction:
             "inputs": [inp.to_dict() for inp in self.inputs],
             "outputs": [out.to_dict() for out in self.outputs],
             "fee": str(self.fee),
+            "nonce": self.nonce,
             "proof": self.proof,
             "signature": self.signature,
             "pubkey": self.pubkey.hex() if self.pubkey else None,
