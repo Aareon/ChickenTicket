@@ -13,23 +13,23 @@ from .crypto.chicken import chicken_hash
 class Blockchain:
     """Represents a blockchain holding a sequence of blocks."""
 
-    DIFFICULTY_ADJUSTMENT_INTERVAL = 3
+    DIFFICULTY_ADJUSTMENT_INTERVAL = 5
     TARGET_BLOCK_TIME = 120  # Target time for block generation in seconds
-    MAX_ADJUSTMENT_FACTOR = 2  # Maximum factor by which the difficulty can adjust
+    MAX_ADJUSTMENT_FACTOR = 1  # Maximum factor by which the difficulty can adjust
 
     def __init__(self):
         """Initializes the blockchain with a genesis block."""
         self.chain: List[Block] = []
         self.current_transactions: List[Transaction] = []  # mempool
         self.difficulty = 1  # Initial difficulty
-        self.block_generation_interval = 30  # Target time for block generation in seconds
         self.ema_block_time = self.TARGET_BLOCK_TIME  # Initial EMA equals target block time
-        self.alpha = 0.01  # Smoothing factor for EMA calculation
-        self.min_alpha = 0.01  # Minimum alpha value
-        self.max_alpha = 0.2  # Maximum alpha value
-        self.alpha_sensitivity = 0.05  # Sensitivity of alpha adjustments
+        self.alpha = 0.5  # Smoothing factor for EMA calculation
+        self.min_alpha = 0.001  # Minimum alpha value
+        self.max_alpha = 0.5  # Maximum alpha value
+        self.alpha_sensitivity = 0.2  # Sensitivity of alpha adjustments
         self.last_block_time = None  # Store the last block time for comparison
-        
+        self.scaling_factor = 0.2  # how aggressively the difficulty should adjust
+
         self.create_genesis_block()
 
         self.current_block = Block(version=1, idx=len(self.chain), previous_proof=self.chain[-1].proof, nonce=0, difficulty=self.difficulty)  # Initialize with dummy values
@@ -86,12 +86,8 @@ class Blockchain:
         # Calculate the deviation of the EMA from the target block time
         deviation = (self.ema_block_time - self.TARGET_BLOCK_TIME) / self.TARGET_BLOCK_TIME
 
-        # Define a scaling factor for how aggressively the difficulty should adjust
-        # This value may need to be fine-tuned based on the blockchain's needs
-        scaling_factor = 0.12  # Adjust based on testing and requirements
-
         # Calculate the adjustment factor based on the deviation, ensuring it's within the allowed range
-        adjustment_factor = max(min(deviation * scaling_factor, self.MAX_ADJUSTMENT_FACTOR), -self.MAX_ADJUSTMENT_FACTOR)
+        adjustment_factor = max(min(deviation * self.scaling_factor, self.MAX_ADJUSTMENT_FACTOR), -self.MAX_ADJUSTMENT_FACTOR)
 
         # Apply the adjustment factor to the current difficulty
         if adjustment_factor > 0:
@@ -103,9 +99,6 @@ class Blockchain:
 
         # Ensure the new difficulty is at least 1, and no more than 64
         new_difficulty = max(1, min(new_difficulty, 64))
-
-        if new_difficulty != self.difficulty:
-            logger.info(f"Adjusting difficulty from {self.difficulty} to {new_difficulty}")
 
         return new_difficulty
     
@@ -135,6 +128,8 @@ class Blockchain:
         if (block.idx + 1) % self.DIFFICULTY_ADJUSTMENT_INTERVAL == 0:
             self.difficulty = self.calculate_difficulty()
             logger.info(f"New difficulty after adjustment: {self.difficulty}")
+        
+        return self.difficulty
 
     def mine(self):
         """
@@ -159,6 +154,7 @@ class Blockchain:
 
         # Add the mined block to the blockchain
         self.add_block(new_block)
+        logger.info(f"Block {len(self.chain)} added to chain. EMA block time: {self.ema_block_time}")
 
         # Prepare for the next block by clearing processed transactions
         self.current_transactions = []
