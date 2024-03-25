@@ -73,7 +73,7 @@ class Block:
         self.state_root = ""
         self.proof = None
         self.difficulty = kwargs.get("difficulty", 1)
-        self.reward = kwargs.get("reward", "0")
+        self.reward = kwargs.get("reward", 1)
     
     def calculate_state_root(self):
         # The state root is the root hash of the transactions trie after all transactions have been added
@@ -130,6 +130,7 @@ class Block:
         transaction_data = transaction.json().encode()
         self.transactions[tx_id_bytes] = transaction_data
         self.state_root = self.transactions.root_hash.hex()
+        logger.debug(f"Transaction {transaction.idx} added to Block {self.idx}")
 
     def get_transactions_as_list(self) -> list:
         """
