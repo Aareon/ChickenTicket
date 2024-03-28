@@ -97,7 +97,7 @@ class Transaction:
         self.pubkey: Optional[bytes] = kwargs.get("pubkey")
 
         self.validator = TransactionValidator()
-    
+
     def __str__(self) -> str:
         """Returns the JSON representation of the transaction."""
         return json.dumps(self.to_dict(), sort_keys=True)
@@ -119,7 +119,7 @@ class Transaction:
             output (Output): The output to add to the transaction.
         """
         self.outputs.append(output)
-    
+
     def get_all_transactions(self):
         transactions_list = []
 
@@ -153,7 +153,7 @@ class Transaction:
             "signature": self.signature,
             "pubkey": self.pubkey.hex() if self.pubkey else None,
         }
-    
+
     def json(self) -> str:
         """Serializes the transaction to a JSON string."""
         return json.dumps(self.to_dict(), sort_keys=True)

@@ -54,7 +54,9 @@ class Address:
 
         if address is not None:
             if len(address) != self.LENGTH:
-                raise ValueError(f"Address '{str(self)}' must be {self.LENGTH} characters long. Is {len(str(self))}")
+                raise ValueError(
+                    f"Address '{str(self)}' must be {self.LENGTH} characters long. Is {len(str(self))}"
+                )
 
             self.prefix = address[:2]
             self.addr = address[2:-4]

@@ -58,7 +58,7 @@ class TransactionValidator:
             vk.verify(bytes.fromhex(transaction.signature), transaction.hash().encode())
         except ecdsa.BadSignatureError:
             raise TransactionValidationError("Signature verification failed.")
-    
+
     @staticmethod
     def validate(transaction: "Transaction", blockchain: "Blockchain") -> bool:
         """Validates a transaction against a blockchain and it's state."""
