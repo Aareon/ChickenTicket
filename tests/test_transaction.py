@@ -1,15 +1,19 @@
-import os
 import sys
 from decimal import Decimal
+from pathlib import Path
+
 import pytest
 
-sys.path.append(os.path.abspath("src"))
-from address import Address
-from crypto.chicken import chicken_hash
-from keys import KeyPair
-from transaction import Input, Output, Transaction, TXVersion
-from chain import Blockchain
-from validator import TransactionValidator, TransactionValidationError
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from address import Address  # noqa: E402
+from chain import Blockchain  # noqa: E402
+from crypto.chicken import chicken_hash  # noqa: E402
+from keys import KeyPair  # noqa: E402
+from transaction import Input, Output, Transaction, TXVersion  # noqa: E402
+from validator import (TransactionValidationError,  # noqa: E402
+                       TransactionValidator)
 
 
 @pytest.fixture

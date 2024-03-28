@@ -1,11 +1,13 @@
-import os
 import sys
+from pathlib import Path
 
 import pytest
 
-sys.path.append(os.path.abspath("src"))
-from address import Address
-from keys import KeyPair, PrivKey, PubKey
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from address import Address  # noqa: E402
+from keys import KeyPair, PrivKey, PubKey  # noqa: E402
 
 
 def test_address_generation():

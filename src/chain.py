@@ -1,13 +1,18 @@
+import sys
 from decimal import Decimal
+from pathlib import Path
 from typing import List
 
 from loguru import logger
 
-from .block import Block
-from .keys import KeyPair
-from .transaction import Transaction
-from .utils.time_tools import get_timestamp
-from .crypto.chicken import chicken_hash
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from block import Block  # noqa: E402
+from crypto.chicken import chicken_hash  # noqa: E402
+from keys import KeyPair  # noqa: E402
+from transaction import Transaction  # noqa: E402
+from utils.time_tools import get_timestamp  # noqa: E402
 
 
 class Blockchain:
@@ -37,6 +42,7 @@ class Blockchain:
     def create_genesis_block(self):
         """Creates and adds the genesis block to the blockchain."""
         genesis_block = Block(version=1, idx=0, previous_proof="0", nonce=0, difficulty=self.difficulty)
+        genesis_block.add_transaction(Transaction(sender="0", recipient="0", amount=1))
         genesis_block.timestamp = get_timestamp()
         self.chain.append(genesis_block)
         logger.info("Genesis block created.")

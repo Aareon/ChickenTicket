@@ -1,15 +1,17 @@
-import os
+
 import sys
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
-sys.path.append(os.path.abspath("src"))
-from address import Address
-from block import Block
-from chain import Blockchain
-from keys import KeyPair
-from transaction import Input, Output, Transaction
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from address import Address  # noqa: E402
+from block import Block  # noqa: E402
+from chain import Blockchain  # noqa: E402
+from keys import KeyPair  # noqa: E402
 
 
 @pytest.fixture

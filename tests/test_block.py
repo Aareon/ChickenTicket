@@ -1,13 +1,15 @@
+import sys
 from decimal import Decimal
+from pathlib import Path
+
 import pytest
 
-import sys
-import os
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
 
-sys.path.append(os.path.abspath("src"))
-from block import Block
-from transaction import Transaction, Input, Output
-from address import Address
+from address import Address  # noqa: E402
+from block import Block  # noqa: E402
+from transaction import Input, Output, Transaction  # noqa: E402
 
 
 @pytest.fixture

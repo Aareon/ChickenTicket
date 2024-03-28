@@ -1,9 +1,14 @@
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 import ecdsa
 from ecdsa.util import randrange_from_seed__trytryagain
 
-from .config import Config
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from config import Config  # noqa: E402
 
 CURVE = Config.CURVE
 

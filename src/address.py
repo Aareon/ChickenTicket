@@ -1,14 +1,14 @@
-from typing import Optional
-from pathlib import Path
 import sys
+from pathlib import Path
+from typing import Optional
 
 from base58 import b58encode
 
-project_root = Path(__file__).parent  # Adjust as necessary
+project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 
-from crypto.chicken import chicken_hash
-from keys import KeyPair
+from crypto.chicken import chicken_hash  # noqa: E402
+from keys import KeyPair  # noqa: E402
 
 
 class Address:

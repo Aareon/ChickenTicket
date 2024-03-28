@@ -1,11 +1,14 @@
-import os
 import sys
+from pathlib import Path
 
 import ecdsa
 import pytest
 
-sys.path.append(os.path.abspath("src"))
-from keys import PrivKey, PubKey, KeyPair
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from keys import KeyPair, PrivKey, PubKey  # noqa: E402
+
 
 def test_keypair_generation():
     key_pair = KeyPair.new()

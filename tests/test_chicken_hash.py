@@ -1,9 +1,11 @@
-import os
 import sys
 from binascii import hexlify
+from pathlib import Path
 
-sys.path.append(os.path.abspath("src"))
-from crypto.chicken import chicken_hash
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from crypto.chicken import chicken_hash  # noqa: E402
 
 
 def test_chicken_hash():

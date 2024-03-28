@@ -1,11 +1,16 @@
+import sys
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 
 from loguru import logger
 from trie import HexaryTrie
 
-from .crypto.chicken import chicken_hash
-from .utils.time_tools import get_timestamp
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from crypto.chicken import chicken_hash  # noqa: E402
+from utils.time_tools import get_timestamp  # noqa: E402
 
 try:
     import ujson as json
@@ -191,9 +196,10 @@ class Block:
 if __name__ == "__main__":
     # Initialize logging and the blockchain
     from loguru import logger
+
+    from address import Address
     from chain import Blockchain
     from keys import KeyPair
-    from address import Address
 
     # Initialize the blockchain with the genesis block
     chain = Blockchain()
@@ -225,6 +231,9 @@ if __name__ == "__main__":
     # Display the final state of the blockchain
     for idx, block in enumerate(chain.chain):
         logger.info(f"Block {idx}: {block}")
+        txs = block.get_transactions_as_list()
+        logger.info(f"Transactions: {txs}, type: {type(txs)}, length: {len(txs)}")
+        logger.info(txs[0])
     
     logger.info(f"Chain length: {len(chain.chain)}")
 

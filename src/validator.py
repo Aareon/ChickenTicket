@@ -1,9 +1,14 @@
+import sys
 from decimal import Decimal
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import ecdsa
 
-from .config import Config
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from config import Config  # noqa: E402
 
 if TYPE_CHECKING:
     from chain import Blockchain

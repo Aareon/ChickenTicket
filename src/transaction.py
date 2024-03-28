@@ -1,6 +1,8 @@
+import sys
 import time
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 from typing import List, Optional
 
 import ecdsa
@@ -10,11 +12,14 @@ try:
 except ImportError:
     import json
 
-from .address import Address
-from .crypto.chicken import chicken_hash
-from .config import Config
-from .keys import KeyPair
-from .validator import TransactionValidator
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+
+from address import Address  # noqa: E402
+from config import Config  # noqa: E402
+from crypto.chicken import chicken_hash  # noqa: E402
+from keys import KeyPair  # noqa: E402
+from validator import TransactionValidator  # noqa: E402
 
 
 @dataclass
