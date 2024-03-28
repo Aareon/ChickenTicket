@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-project_root = Path(__file__).parent
-sys.path.append(str(project_root))
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root / "src"))
 
 from address import Address  # noqa: E402
 from chain import Blockchain  # noqa: E402

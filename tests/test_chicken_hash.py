@@ -2,8 +2,8 @@ import sys
 from binascii import hexlify
 from pathlib import Path
 
-project_root = Path(__file__).parent
-sys.path.append(str(project_root))
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root / "src"))
 
 from crypto.chicken import chicken_hash  # noqa: E402
 
