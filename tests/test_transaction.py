@@ -12,8 +12,7 @@ from chain import Blockchain  # noqa: E402
 from crypto.chicken import chicken_hash  # noqa: E402
 from keys import KeyPair  # noqa: E402
 from transaction import Input, Output, Transaction, TXVersion  # noqa: E402
-from validator import (TransactionValidationError,  # noqa: E402
-                       TransactionValidator)
+from validator import TransactionValidationError, TransactionValidator  # noqa: E402
 
 
 @pytest.fixture
@@ -30,6 +29,7 @@ def predefined_address_str():
 def recipient_address(predefined_address_str):
     return Address(address=predefined_address_str)
 
+
 @pytest.fixture
 def blockchain():
     return Blockchain()
@@ -39,7 +39,7 @@ def blockchain():
 def valid_inputs_outputs(recipient_address):
     input_tx_hash = chicken_hash(b"input_tx").hex()
     inputs = [Input(tx_hash=input_tx_hash, output_id=0)]
-    outputs = [Output(recipient=recipient_address, amount=Decimal('10'))]
+    outputs = [Output(recipient=recipient_address, amount=Decimal("10"))]
     return inputs, outputs
 
 
@@ -106,34 +106,59 @@ def test_validate_successful(predefined_address_str, blockchain):
 
 
 def test_validate_fails_no_inputs(predefined_address_str, blockchain):
-    tx = Transaction(outputs=[Output(recipient=Address(address=predefined_address_str), amount=Decimal('10'))], fee=Decimal('0'))
-    
+    tx = Transaction(
+        outputs=[
+            Output(
+                recipient=Address(address=predefined_address_str), amount=Decimal("10")
+            )
+        ],
+        fee=Decimal("0"),
+    )
+
     assert not TransactionValidator.validate(tx, blockchain)
+
 
 def test_validate_fails_no_outputs(blockchain):
     input_tx_hash = chicken_hash(b"input_tx").hex()
-    with pytest.raises(TransactionValidationError, match="at least one input and one output"):
-        tx = Transaction(inputs=[Input(tx_hash=input_tx_hash, output_id=0)], fee=Decimal('0'))
+    with pytest.raises(
+        TransactionValidationError, match="at least one input and one output"
+    ):
+        tx = Transaction(
+            inputs=[Input(tx_hash=input_tx_hash, output_id=0)], fee=Decimal("0")
+        )
         # Use TransactionValidator for validation
         TransactionValidator.validate(tx, blockchain)
 
-def test_validate_fails_input_output_mismatch(key_pair, valid_inputs_outputs, recipient_address, blockchain):
+
+def test_validate_fails_input_output_mismatch(
+    key_pair, valid_inputs_outputs, recipient_address, blockchain
+):
     inputs, _ = valid_inputs_outputs
-    outputs = [Output(recipient=recipient_address, amount=Decimal('5'))]  # Less than inputs
-    tx = Transaction(inputs=inputs, outputs=outputs, fee=Decimal('4'))  # Fee makes it not equal
+    outputs = [
+        Output(recipient=recipient_address, amount=Decimal("5"))
+    ]  # Less than inputs
+    tx = Transaction(
+        inputs=inputs, outputs=outputs, fee=Decimal("4")
+    )  # Fee makes it not equal
     tx.sign(key_pair)
 
-    with pytest.raises(TransactionValidationError, match="Input totals must equal output totals plus transaction fee."):
+    with pytest.raises(
+        TransactionValidationError,
+        match="Input totals must equal output totals plus transaction fee.",
+    ):
         # Use TransactionValidator for validation
         TransactionValidator.validate(tx, blockchain)
+
 
 def test_validate_fails_bad_signature(key_pair, valid_inputs_outputs, blockchain):
     inputs, outputs = valid_inputs_outputs
-    tx = Transaction(inputs=inputs, outputs=outputs, fee=Decimal('0'))
+    tx = Transaction(inputs=inputs, outputs=outputs, fee=Decimal("0"))
     tx.hash()  # Generate the proof
     tx.signature = "bad_signature"  # Invalid signature
     tx.pubkey = key_pair.pub.data
 
-    with pytest.raises(TransactionValidationError, match="Signature verification failed."):
+    with pytest.raises(
+        TransactionValidationError, match="Signature verification failed."
+    ):
         # Use TransactionValidator for validation
         TransactionValidator.validate(tx, blockchain)

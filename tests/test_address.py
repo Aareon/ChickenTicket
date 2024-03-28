@@ -73,9 +73,7 @@ def test_address_constructor_and_serialization():
 
     with pytest.raises(ValueError):
         addr = f"0x{'1' * (Address.LENGTH - 2)}"
-        Address(
-            address=addr
-        )  # Correct length but likely invalid checksum
+        Address(address=addr)  # Correct length but likely invalid checksum
 
 
 def test_invalid_address_deserialization():
@@ -84,7 +82,9 @@ def test_invalid_address_deserialization():
         Address(address=invalid_address_str)
 
     # Assuming '0x1234abcd' is an example of an invalid address format for your application
-    invalid_checksum_address = "0x" + "1" * (Address.LENGTH - 6) + "abcd"  # Correct length but incorrect checksum
+    invalid_checksum_address = (
+        "0x" + "1" * (Address.LENGTH - 6) + "abcd"
+    )  # Correct length but incorrect checksum
     with pytest.raises(ValueError, match="checksum"):
         Address(address=invalid_checksum_address)
 
