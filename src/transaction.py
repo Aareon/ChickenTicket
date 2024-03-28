@@ -160,6 +160,8 @@ class Transaction:
 
     def hash(self) -> str:
         """Calculates and returns the hash of the transaction."""
+        if self.signature is not None:
+            raise ValueError("Transaction already signed")
         self.proof = chicken_hash(
             json.dumps(self.to_dict(), sort_keys=True).encode()
         ).hex()
