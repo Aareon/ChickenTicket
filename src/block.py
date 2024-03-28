@@ -130,7 +130,8 @@ class Block:
         Args:
             transaction (Transaction): The transaction to add.
         """
-        tx_id_bytes = bytes(transaction.hash(), "utf-8")
+        logger.info(f"Adding transaction to block {transaction.proof}...")
+        tx_id_bytes = bytes(transaction.proof, "utf-8")
         transaction_data = transaction.json().encode()
         self.transactions[tx_id_bytes] = transaction_data
         self.state_root = self.transactions.root_hash.hex()
@@ -173,19 +174,22 @@ class Block:
         Returns:
             Decimal: The amount associated with the specified transaction output.
         """
-        transaction_key_bytes = bytes.fromhex(transaction_hash)
-
-        # Start traversal from the root to find the transaction
+        transactions = self.get_transactions_as_list()
+        logger.debug(f"Transactions in block: {transactions}")
+        if len(transactions) == 0:
+            raise ValueError("No transactions found in the block.")
+        elif len(transactions) < output_index - 1:
+            raise ValueError("Output index out of range.")
         try:
-            # Retrieve the serialized transaction data directly if possible
-            transaction_bytes = self.transactions[transaction_key_bytes]
-            transaction_data = json.loads(transaction_bytes.decode())
-            output_amount = transaction_data["outputs"][output_index]["amount"]
-            return Decimal(output_amount)
+            for i, transaction in enumerate(transactions):
+                if transaction["proof"] == transaction_hash:
+                    try:
+                        return Decimal(transaction["outputs"][output_index]["amount"])
+                    except IndexError:
+                        raise ValueError("Invalid output index.")
+            raise ValueError("Invalid transaction hash or output index.")
         except KeyError:
-            raise ValueError("Transaction not found in trie.")
-        except IndexError:
-            raise ValueError("Invalid output index for transaction.")
+            raise ValueError("Invalid transaction hash or output index.")
 
     def validate(self):
         """Validates the block. Currently a placeholder."""
@@ -211,31 +215,29 @@ if __name__ == "__main__":
     aareon_addr = Address(aareon_key_pair)
 
     # Mine a total of 5 blocks, each with a transaction
-    for block_num in range(1, 20):
+    for block_num in range(0, 2):
         # Simulate creating a transaction from Genesis to Aareon
         amount = 100 * block_num  # Vary the amount for demonstration
         transaction = chain.create_transaction(
             genesis_addr, aareon_addr, amount, genesis_key_pair
         )
+        transaction.sign(genesis_key_pair)
 
         # Log the created transaction
         logger.info(f"Block {block_num} - Created transaction: {transaction}")
 
+        block = chain.prepare_new_block()
+
         # Add the transaction to the current block's Trie and mine the block
         chain.add_transaction_to_current_block(transaction)
-        logger.info(f"Block {block_num} - Mining block with transaction...")
-        chain.mine()
+        logger.info(f"Block {block_num} - Mining block with transaction {transaction.proof}...")
+        block = chain.mine(block)
+        chain.add_block(block)
 
         # Log the newly mined block
         logger.info(
-            f"Block {block_num} mined and added to the blockchain.\n{chain.chain[-1]}"
+            f"Block {block_num} mined and added to the blockchain. Block: {chain.chain[-1]}"
         )
 
-    # Display the final state of the blockchain
-    for idx, block in enumerate(chain.chain):
-        logger.info(f"Block {idx}: {block}")
-        txs = block.get_transactions_as_list()
-        logger.info(f"Transactions: {txs}, type: {type(txs)}, length: {len(txs)}")
-        logger.info(txs[0])
-
-    logger.info(f"Chain length: {len(chain.chain)}")
+        amount = chain.fetch_output_amount(transaction.proof, 0)
+        logger.info(f"Block {block_num} - Output amount: {amount}")
