@@ -1,5 +1,6 @@
 import sys
 from decimal import Decimal
+import logging
 from pathlib import Path
 
 import pytest
@@ -34,18 +35,18 @@ def recipient_key_pair():
 
 
 @pytest.fixture
-def sender_address(sender_key_pair):
+def sender_address(sender_key_pair: KeyPair):
     """Generates a sender address from the sender's key pair."""
     return Address.new(sender_key_pair)
 
 
 @pytest.fixture
-def recipient_address(recipient_key_pair):
+def recipient_address(recipient_key_pair: KeyPair):
     """Generates a recipient address from the recipient's key pair."""
     return Address.new(recipient_key_pair)
 
 
-def test_create_genesis_block(blockchain):
+def test_create_genesis_block(blockchain: Blockchain):
     """
     Test if the blockchain is initialized with a genesis block.
 
@@ -55,7 +56,7 @@ def test_create_genesis_block(blockchain):
     assert len(blockchain.chain) == 1  # Assuming the genesis block is added in __init__
 
 
-def test_add_block(blockchain, sender_key_pair, sender_address, recipient_address):
+def test_add_block(blockchain: Blockchain, sender_key_pair: KeyPair, sender_address: Address, recipient_address: Address):
     """
     Test adding a block to the blockchain.
 
@@ -74,7 +75,7 @@ def test_add_block(blockchain, sender_key_pair, sender_address, recipient_addres
     blockchain.add_block(new_block)
 
 
-def test_add_transaction_to_current_block(blockchain, sender_key_pair):
+def test_add_transaction_to_current_block(blockchain: Blockchain, sender_key_pair: KeyPair):
     """
     Test adding a transaction to the current block's transaction list.
 
@@ -90,7 +91,7 @@ def test_add_transaction_to_current_block(blockchain, sender_key_pair):
     assert len(blockchain.current_transactions) == 1
 
 
-def test_fetch_output_amount(blockchain, sender_key_pair, recipient_address):
+def test_fetch_output_amount(blockchain: Blockchain, sender_key_pair: KeyPair, recipient_address: Address):
     """
     Test fetching an output amount from a transaction stored in the blockchain.
 
@@ -111,22 +112,20 @@ def test_fetch_output_amount(blockchain, sender_key_pair, recipient_address):
     blockchain.add_transaction(transaction)
 
     # Manually mine a block to include the transaction in the blockchain
-    # This is a placeholder for the actual mining process which would normally include the transaction in a block
-    new_block = Block(
-        version=1, idx=len(blockchain.chain), previous_proof="123", nonce=100
-    )
+    new_block = blockchain.prepare_new_block()
     new_block.add_transaction(transaction)
+    logging.info(f"New block: {new_block.json()}")
     blockchain.add_block(new_block)
 
     # Fetch the output amount from the transaction we added
     # Assuming transaction outputs are indexed starting at 0 and the test transaction has a single output
-    fetched_amount = blockchain.fetch_output_amount(transaction.hash(), 0)
+    fetched_amount = blockchain.fetch_output_amount(transaction.proof, 0)
     assert (
         fetched_amount == amount
     ), "Fetched output amount does not match the expected value."
 
 
-def test_validate_chain(blockchain):
+def test_validate_chain(blockchain: Blockchain):
     """
     Test the validation of the blockchain.
 
