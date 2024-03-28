@@ -52,7 +52,9 @@ class Blockchain:
         genesis_block = Block(
             version=1, idx=0, previous_proof="0", nonce=0, difficulty=self.difficulty
         )
-        genesis_block.add_transaction(Transaction(sender="0", recipient="0", amount=1))
+        genesis_transaction = Transaction(sender="0", recipient="0", amount=1)
+        genesis_transaction.sign(KeyPair.new())
+        genesis_block.add_transaction(genesis_transaction)
         genesis_block.timestamp = get_timestamp()
         self.chain.append(genesis_block)
         logger.info("Genesis block created.")
@@ -77,6 +79,8 @@ class Blockchain:
                 return block.fetch_output_amount(tx_hash, output_index)
             except ValueError:
                 continue
+            except IndexError:
+                raise ValueError(f"Output index {output_index} out of range.")
         raise ValueError(f"Transaction with hash {tx_hash} not found in the blockchain.")
 
     def validate_chain(self) -> bool:
@@ -88,6 +92,8 @@ class Blockchain:
     ) -> Transaction:
         """Creates a new transaction, signs it, and adds it to the list of current transactions."""
         transaction = Transaction(sender=sender, recipient=recipient, amount=amount)
+        proof = transaction.hash()
+        logger.debug(f"Created transaction: {proof}")
         transaction.sign(key_pair)
         self.add_transaction(transaction)
         return transaction
@@ -169,7 +175,7 @@ class Blockchain:
 
         return self.difficulty
 
-    def mine(self):
+    def mine(self, block: Block = None):
         """
         Simulates the mining process for the current block, adding it to the blockchain.
         This method adjusts the proof and previous_proof attributes correctly.
@@ -178,26 +184,27 @@ class Blockchain:
         new_difficulty = self.calculate_difficulty()
 
         # Prepare a new block with transactions from the mempool
-        new_block = Block(
-            version=1,
-            idx=len(self.chain),
-            previous_proof=last_block.proof,
-            nonce=0,
-            difficulty=new_difficulty,
-        )
-        for transaction in self.current_transactions:
-            new_block.add_transaction(transaction)
+        if block is None:
+            block = Block(
+                version=1,
+                idx=len(self.chain),
+                previous_proof=last_block.proof,
+                nonce=0,
+                difficulty=new_difficulty,
+            )
+            for transaction in self.current_transactions:
+                block.add_transaction(transaction)
 
         # After adding transactions, calculate the state root
-        new_block.calculate_state_root()
+        block.calculate_state_root()
 
         # Find a valid nonce for the new block based on its difficulty
-        nonce, proof = self.find_valid_nonce(new_block)
-        new_block.nonce = nonce
-        new_block.proof = proof
+        nonce, proof = self.find_valid_nonce(block)
+        block.nonce = nonce
+        block.proof = proof
 
         # Add the mined block to the blockchain
-        self.add_block(new_block)
+        self.add_block(block)
         logger.info(
             f"Block {len(self.chain)} added to chain. EMA block time: {self.ema_block_time}"
         )
@@ -205,6 +212,7 @@ class Blockchain:
         # Prepare for the next block by clearing processed transactions
         self.current_transactions = []
         self.prepare_new_block()
+        return block
 
     def prepare_new_block(self):
         """Prepares a new current block for the blockchain after the previous block has been mined and added to the chain."""
