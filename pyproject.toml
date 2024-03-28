@@ -31,6 +31,7 @@ ruff = "^0.3.4"
 
 [tool.poetry.group.optional.dependencies]
 matplotlib = "^3.8.3"
+ujson = "^5.9.0"
 
 
 [tool.poetry.group.ci.dependencies]
