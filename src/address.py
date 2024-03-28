@@ -1,9 +1,14 @@
 from typing import Optional
+from pathlib import Path
+import sys
 
 from base58 import b58encode
 
-from .crypto.chicken import chicken_hash
-from .keys import KeyPair
+project_root = Path(__file__).parent  # Adjust as necessary
+sys.path.append(str(project_root))
+
+from crypto.chicken import chicken_hash
+from keys import KeyPair
 
 
 class Address:
