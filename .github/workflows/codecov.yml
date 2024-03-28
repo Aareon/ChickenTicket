@@ -24,8 +24,8 @@ jobs:
 
       - name: Run ATS
         uses: codecov/codecov-ats@v0
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          static_token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run tests and collect coverage
         run: poetry run pytest --cov app ${{ env.CODECOV_ATS_TESTS }}
