@@ -67,6 +67,7 @@ def test_block_transactions(basic_block, basic_transaction):
     Test adding transactions to the block and retrieving them.
     """
     block = basic_block
+    basic_transaction.hash()
     block.add_transaction(basic_transaction)
     transactions = block.get_transactions_as_list()
 
@@ -83,6 +84,7 @@ def test_block_hashing(basic_block, basic_transaction):
     Test the hashing of a Block.
     """
     block = basic_block
+    basic_transaction.hash()
     block.add_transaction(basic_transaction)
     block_hash = (
         block.hash()
