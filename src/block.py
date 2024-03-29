@@ -130,6 +130,10 @@ class Block:
         Args:
             transaction (Transaction): The transaction to add.
         """
+        if transaction.proof is None:
+            raise ValueError("Transaction.proof or is None. Transaction must be hashed, then signed.")
+        if transaction.signature is None:
+            raise ValueError("Transaction.signature is None. Transaction must be signed first.")
         logger.info(f"Adding transaction to block {transaction.proof}...")
         tx_id_bytes = bytes(transaction.proof, "utf-8")
         transaction_data = transaction.json().encode()
