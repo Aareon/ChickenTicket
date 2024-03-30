@@ -30,7 +30,7 @@ class TransactionValidator:
 
         input_total = Decimal("0")
         for inp in transaction.inputs:
-            referenced_output_amount = chain.fetch_output_amount(
+            referenced_output_amount, block = chain.fetch_output_amount(
                 inp.tx_hash, inp.output_id
             )
             input_total += referenced_output_amount
