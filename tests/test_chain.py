@@ -1,6 +1,5 @@
 import sys
 from decimal import Decimal
-import logging
 from pathlib import Path
 
 import pytest
