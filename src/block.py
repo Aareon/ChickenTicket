@@ -176,24 +176,23 @@ class Block:
             output_index (int): The index of the output within the transaction.
 
         Returns:
-            Decimal: The amount associated with the specified transaction output.
+            Decimal or None: The amount associated with the specified transaction output,
+            or None if the transaction is not found.
         """
         transactions = self.get_transactions_as_list()
         logger.debug(f"Transactions in block: {transactions}")
         if len(transactions) == 0:
-            raise ValueError("No transactions found in the block.")
+            return None
         elif len(transactions) < output_index - 1:
-            raise ValueError("Output index out of range.")
-        try:
-            for i, transaction in enumerate(transactions):
-                if transaction["proof"] == transaction_hash:
-                    try:
-                        return Decimal(transaction["outputs"][output_index]["amount"])
-                    except IndexError:
-                        raise ValueError("Invalid output index.")
-            raise ValueError("Invalid transaction hash or output index.")
-        except KeyError:
-            raise ValueError("Invalid transaction hash or output index.")
+            return None
+        for i, transaction in enumerate(transactions):
+            if transaction["proof"] == transaction_hash:
+                logger.debug(f"Transaction found: {transaction}")
+                try:
+                    return Decimal(transaction["outputs"][output_index]["amount"])
+                except IndexError:
+                    raise ValueError("Invalid output index.")
+        return None  # Transaction not found
 
     def validate(self):
         """Validates the block. Currently a placeholder."""
