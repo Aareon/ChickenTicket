@@ -12,6 +12,7 @@ from address import Address  # noqa: E402
 from block import Block  # noqa: E402
 from chain import Blockchain  # noqa: E402
 from keys import KeyPair  # noqa: E402
+from transaction import Output  # noqa: E402
 
 
 @pytest.fixture
@@ -25,19 +26,24 @@ def blockchain():
 @pytest.fixture
 def sender_key_pair():
     """Generates a new key pair for the sender."""
-    return KeyPair.new()
+    return KeyPair.from_seed("pytest sender keypair")
 
 
 @pytest.fixture
 def recipient_key_pair():
     """Generates a new key pair for the recipient."""
-    return KeyPair.new()
+    return KeyPair.from_seed("pytest recipient keypair")
 
 
 @pytest.fixture
 def sender_address(sender_key_pair: KeyPair):
     """Generates a sender address from the sender's key pair."""
     return Address.new(sender_key_pair)
+
+@pytest.fixture
+def basic_output(sender_address: Address):
+    """Generates a basic output."""
+    return Output(sender_address, Decimal("10.0"))
 
 
 @pytest.fixture
@@ -75,7 +81,7 @@ def test_add_block(blockchain: Blockchain, sender_key_pair: KeyPair, sender_addr
     blockchain.add_block(new_block)
 
 
-def test_add_transaction_to_current_block(blockchain: Blockchain, sender_key_pair: KeyPair):
+def test_add_transaction_to_current_block(blockchain: Blockchain, sender_key_pair: KeyPair, basic_output: Output):
     """
     Test adding a transaction to the current block's transaction list.
 
@@ -87,11 +93,13 @@ def test_add_transaction_to_current_block(blockchain: Blockchain, sender_key_pai
     transaction = blockchain.create_transaction(
         str(sender_address), str(recipient_address), amount, sender_key_pair
     )
+    transaction.add_output(basic_output)
+    transaction.sign(sender_key_pair)
     blockchain.add_transaction_to_current_block(transaction)
     assert len(blockchain.current_transactions) == 1
 
 
-def test_fetch_output_amount(blockchain: Blockchain, sender_key_pair: KeyPair, recipient_address: Address):
+def test_fetch_output_amount(blockchain: Blockchain, sender_key_pair: KeyPair, recipient_address: Address, basic_output):
     """
     Test fetching an output amount from a transaction stored in the blockchain.
 
@@ -109,12 +117,12 @@ def test_fetch_output_amount(blockchain: Blockchain, sender_key_pair: KeyPair, r
     transaction = blockchain.create_transaction(
         sender, recipient, amount, sender_key_pair
     )
+    transaction.add_output(basic_output)
     blockchain.add_transaction(transaction)
 
     # Manually mine a block to include the transaction in the blockchain
     new_block = blockchain.prepare_new_block()
     new_block.add_transaction(transaction)
-    logging.info(f"New block: {new_block.json()}")
     blockchain.add_block(new_block)
 
     # Fetch the output amount from the transaction we added
