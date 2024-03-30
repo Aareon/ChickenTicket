@@ -126,7 +126,7 @@ def test_fetch_output_amount(blockchain: Blockchain, sender_key_pair: KeyPair, r
 
     # Fetch the output amount from the transaction we added
     # Assuming transaction outputs are indexed starting at 0 and the test transaction has a single output
-    fetched_amount = blockchain.fetch_output_amount(transaction.proof, 0)
+    fetched_amount, _ = blockchain.fetch_output_amount(transaction.proof, 0)  # Assuming the method returns a tuple (Decimal, Block)
     assert (
         fetched_amount == amount
     ), "Fetched output amount does not match the expected value."

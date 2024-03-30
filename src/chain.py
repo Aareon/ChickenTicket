@@ -1,7 +1,7 @@
 import sys
 from decimal import Decimal
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from loguru import logger
 
@@ -72,14 +72,25 @@ class Blockchain:
         """Adds a transaction to the current block's Trie."""
         self.current_block.add_transaction(transaction)
 
-    def fetch_output_amount(self, tx_hash: str, output_index: int) -> Decimal:
-        """Fetches the output amount for a given transaction hash and output index from the entire blockchain."""
+    def fetch_output_amount(self, tx_hash: str, output_index: int) -> Tuple[Decimal, Block]:
+        """Fetches the output amount for a given transaction hash and output index from the entire blockchain.
+        
+        Args:
+            tx_hash: The transaction hash as a string.
+            output_index: The index of the output in the transaction.
+        
+        Returns:
+            Tuple[Decimal, Block]: The output amount and the Block containing the transaction.
+        
+        Raises:
+            ValueError: If the transaction with the specified hash is not found in the blockchain.
+        """
         for block in self.chain:
             try:
                 output_amount = block.fetch_output_amount(tx_hash, output_index)
                 if output_amount is None:
                     continue
-                return output_amount
+                return output_amount, block
 
             except ValueError:
                 continue
