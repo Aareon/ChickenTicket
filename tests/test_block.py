@@ -9,6 +9,7 @@ sys.path.append(str(project_root / "src"))
 
 from address import Address  # noqa: E402
 from block import Block  # noqa: E402
+from keys import KeyPair  # noqa: E402
 from transaction import Input, Output, Transaction  # noqa: E402
 
 
@@ -16,6 +17,13 @@ from transaction import Input, Output, Transaction  # noqa: E402
 def basic_block():
     """Fixture for creating a basic block with default parameters."""
     return Block(version=1, idx=0, previous_proof="0000", nonce=100, reward="50")
+
+
+# Fixture for reproducible keypair generation
+@pytest.fixture
+def basic_keypair():
+    """Fixture for creating a basic keypair."""
+    return KeyPair.from_seed("pytest test_block keypair")
 
 
 @pytest.fixture
@@ -62,12 +70,13 @@ def test_block_creation(basic_block):
     assert block.get_transactions_as_list() == []
 
 
-def test_block_transactions(basic_block, basic_transaction):
+def test_block_transactions(basic_block, basic_transaction, basic_keypair):
     """
     Test adding transactions to the block and retrieving them.
     """
     block = basic_block
     basic_transaction.hash()
+    basic_transaction.sign(basic_keypair)
     block.add_transaction(basic_transaction)
     transactions = block.get_transactions_as_list()
 
@@ -79,12 +88,13 @@ def test_block_transactions(basic_block, basic_transaction):
     )  # The state root should change when a transaction is added
 
 
-def test_block_hashing(basic_block, basic_transaction):
+def test_block_hashing(basic_block, basic_transaction, basic_keypair):
     """
     Test the hashing of a Block.
     """
     block = basic_block
     basic_transaction.hash()
+    basic_transaction.sign(basic_keypair)  # Sign the transaction with the keypair
     block.add_transaction(basic_transaction)
     block_hash = (
         block.hash()
