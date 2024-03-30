@@ -76,11 +76,13 @@ class Blockchain:
         """Fetches the output amount for a given transaction hash and output index from the entire blockchain."""
         for block in self.chain:
             try:
-                return block.fetch_output_amount(tx_hash, output_index)
+                output_amount = block.fetch_output_amount(tx_hash, output_index)
+                if output_amount is None:
+                    continue
+                return output_amount
+
             except ValueError:
                 continue
-            except IndexError:
-                raise ValueError(f"Output index {output_index} out of range.")
         raise ValueError(f"Transaction with hash {tx_hash} not found in the blockchain.")
 
     def validate_chain(self) -> bool:
